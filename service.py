@@ -18,12 +18,14 @@ options.add_argument("window-size=1920x1080") # 화면크기(전체화면)
 options.add_argument("disable-gpu") 
 options.add_argument("disable-infobars")
 options.add_argument("--disable-extensions")
+driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+
 # 속도 향상을 위한 옵션 해제
 
 
 
 def getWeatherData(area):
-    driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+    
     # 스크래핑 할 URL 세팅
     URL = "https://m.search.naver.com/search.naver?&query=" + area + "%20날씨"
     # 크롬 드라이버를 통해 지정한 URL의 웹 페이지 오픈
@@ -31,7 +33,7 @@ def getWeatherData(area):
     # 페이지 소스 추출
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
-    
+
     #현재기온
     now_temp = (soup.find("div",{"class":"temperature_text"})).strong.text[5:]
     #최고기온
@@ -87,7 +89,7 @@ def namuSearch(keyword):
     return link
 
 def youtubeSearch(keyword):
-    driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+    
     # 스크래핑 할 URL 세팅
     URL = "https://www.youtube.com/results?search_query=" + keyword
     # 크롬 드라이버를 통해 지정한 URL의 웹 페이지 오픈
@@ -113,7 +115,7 @@ def youtubeSearch(keyword):
 
 def getNews(keyword):
     
-    driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+    
     url = "https://news.naver.com/main/main.naver?mode=LSD&mid=shm&sid1="+str(100+keyword)
     
     driver.get(url) 
@@ -159,7 +161,7 @@ def getNewsSearch(keyword):
     
 
 def realtime():
-    driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+    
     url = "https://signal.bz/"
     driver.get(url) 
     html_source = driver.page_source
@@ -209,7 +211,7 @@ def getExchangeRate():
     source = requests.get("https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=환율", headers=headers)
     soup = bs4.BeautifulSoup(source.content,"html.parser")
     
-    nation = soup.find_all("tr")
+    
     nation_name= list(map(lambda row: [th.text for th in row.find_all("th")], soup.find_all("tr")))
     price = list(map(lambda row: [td.text for td in row.find_all("td")], soup.find_all("tr")))
     price.pop(0)
@@ -225,7 +227,7 @@ def getExchangeRate():
     
 def getAllCoins():
     import re
-    driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+    
     url = "https://kr.investing.com/crypto/currencies?currency=krw"
     # url = "https://kr.investing.com/crypto/"
     driver.get(url) 
