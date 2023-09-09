@@ -11,12 +11,26 @@ from datetime import datetime
 import random
 import pandas as pd
 
+headers = {"User-Agent":"mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/116.0.0.0 safari/537.36"}
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
+options.add_argument("window-size=1920x1080") # 화면크기(전체화면)
+options.add_argument("disable-gpu") 
+options.add_argument("disable-infobars")
+options.add_argument("--disable-extensions")
+# 속도 향상을 위한 옵션 해제
+
+
 
 def getWeatherData(area):
-    source = requests.get("https://m.search.naver.com/search.naver?&query=" + area + "%20날씨")
-    soup = bs4.BeautifulSoup(source.content,"html.parser")
+    driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+    # 스크래핑 할 URL 세팅
+    URL = "https://m.search.naver.com/search.naver?&query=" + area + "%20날씨"
+    # 크롬 드라이버를 통해 지정한 URL의 웹 페이지 오픈
+    driver.get(URL)
+    # 페이지 소스 추출
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source, 'html.parser')
     
     #현재기온
     now_temp = (soup.find("div",{"class":"temperature_text"})).strong.text[5:]
@@ -38,9 +52,6 @@ def getWeatherData(area):
     
     chart = (soup.find("ul",{"class":"today_chart_list"})).text.strip()
     chart = chart.replace("     ","\n")
-    #미세먼지
-    #print(dust)
-    #초미세먼지
     
     res = f'''[현재 {area} 날씨]
     
@@ -174,7 +185,7 @@ def realtime():
 
 def getZodiac(keyword):
     url = "https://unse.daily.co.kr/?p=zodiac#unseback"
-    source = requests.get(url)
+    source = requests.get(url, headers=headers)
     soup = BeautifulSoup(source.content,"html.parser",from_encoding='cp949')
     
     zodiac = soup.find("section",{"class":"container_zodiac"})
@@ -184,9 +195,6 @@ def getZodiac(keyword):
     now = datetime.now()
     # 원하는 형식으로 포맷팅
     formatted_now = now.strftime("%Y년 %m월 %d일")
-    
-    print(zodiac_name)
-    print(zodiac_content)
     
     res = f"""[{formatted_now} {keyword} 운세]"""
     res = res + "\n\n"
@@ -198,20 +206,20 @@ def getZodiac(keyword):
     return res.strip()
             
 def getExchangeRate():
-    source = requests.get("https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=환율")
+    source = requests.get("https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=환율", headers=headers)
     soup = bs4.BeautifulSoup(source.content,"html.parser")
     
     nation = soup.find_all("tr")
-    print(nation)
-    print(len(nation))
+    nation_name= list(map(lambda row: [th.text for th in row.find_all("th")], soup.find_all("tr")))
+    price = list(map(lambda row: [td.text for td in row.find_all("td")], soup.find_all("tr")))
+    price.pop(0)
+    nation_name.pop(0)    
+    res = """\U0001F4B2[환율 정보]\U0001F4B2\n\n"""
+    
+    for i in range(0, len(nation_name)):
 
-    res = """[환율 정보]\n\n"""
-    
-    for i in range(1, len(nation)):
+        res = res + nation_name[i][0]+" : \U000020A9"+price[i][0]+"\n"
         
-        arr = nation[i].text.split()
-        res = res + arr[0]+f"({arr[1]})"+f": {arr[2]}\n"
-    
     res = res + "\n출처(네이버 환율)"        
     return res.strip()
     
@@ -232,8 +240,8 @@ def getAllCoins():
     price = soup.find_all("td","datatable_cell__LJp3C datatable_cell--align-end__qgxDQ text-secondary !text-sm crypto-coins-table_thirdMobileCell__f8EsE")
     now = datetime.now()
     # 원하는 형식으로 포맷팅
-    formatted_now = now.strftime("%Y년 %m월 %d일 %H시 %M분")
-    res = f"""[{formatted_now} 코인 시세]"""
+    formatted_now = now.strftime("%m월 %d일 %H시 %M분")
+    res = f"""[{formatted_now} \U000020BF 시세]"""
     res = res + "\n\n"
     
     for i in range(0,10):
@@ -245,9 +253,15 @@ def getAllCoins():
 
 def getRestaurantByArea(area):
     print(area)
-    source = requests.get("https://map.naver.com/p/search/"+area+"맛집")
+    source = requests.get("https://map.kakao.com/?q="+area+"맛집", headers=headers)
     soup = bs4.BeautifulSoup(source.content,"html.parser")
+    
+    rest_names = soup.find_all("strong","tit_name")
+    rest_sub = soup.find_all("span","subcategory clickable")
+    open_time = soup.find_all("p","periodWarp")
+    rest_link = soup.find_all("div","contact clickArea")
     print(soup)
-    rest_list = soup.find_all("li","UEzoS rTjJo")
-    soup.find
+    
+    
+    
     return "test"
