@@ -71,11 +71,9 @@ def getLottery(sender):
     lotto_numbers = random.sample(range(1, 46), 6)
     print(sorted(lotto_numbers))
     
-    res = f'''{sender}님을 위한 로또 추천번호!
+    res = f'''"{sender}"님을 위한 로또 추천번호!
 
 번호 : {sorted(lotto_numbers)}
-
-1등 당첨되면 반띵 아시죠?
 '''
     
     return res
@@ -206,6 +204,31 @@ def getZodiac(keyword):
             break
     
     return res.strip()
+
+def getHoroscope(keyword):
+    url = "https://www.fortunade.com/unse/free/star/daily.php?gtype=2"
+    source = requests.get(url, headers=headers)
+    soup = BeautifulSoup(source.content,"html.parser",from_encoding='cp949')
+    horoscope_commands = ["양","황소","쌍둥이","게","사자","처녀","천칭","전갈","사수","염소","물병","물고기"]
+    scope = horoscope_commands.index(keyword) if keyword in horoscope_commands else None
+    print(scope)
+    element = soup.find(id=f"result_{int(scope+1)}")
+    contents = element.select("div.today_item > div.desc")[0]
+    print(contents)
+    
+    
+    now = datetime.now()
+    # 원하는 형식으로 포맷팅
+    formatted_now = now.strftime("%Y년 %m월 %d일")
+    
+    res = f"""[{formatted_now} {keyword}자리 운세]
+
+{contents.text}
+"""
+    
+    
+    
+    return res
             
 def getExchangeRate():
     source = requests.get("https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=환율", headers=headers)
@@ -254,16 +277,31 @@ def getAllCoins():
     return res.strip()
 
 def getRestaurantByArea(area):
-    print(area)
-    source = requests.get("https://map.kakao.com/?q="+area+"맛집", headers=headers)
-    soup = bs4.BeautifulSoup(source.content,"html.parser")
     
-    rest_names = soup.find_all("strong","tit_name")
+    url = "https://map.kakao.com/?q="+area+"맛집"
+    # source = requests.get("https://map.kakao.com/?q="+area+"맛집", headers=headers)
+    # soup = bs4.BeautifulSoup(source.content,"html.parser")
+    driver.get(url) 
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source, 'html.parser')
+    
+    rest_names = soup.find_all("a","link_name")
     rest_sub = soup.find_all("span","subcategory clickable")
     open_time = soup.find_all("p","periodWarp")
-    rest_link = soup.find_all("div","contact clickArea")
-    print(soup)
+    rest_link = soup.find_all("a","moreview")
+
+    print(rest_link)
+    res = f"""['{area} 맛집' 카카오맵 검색 결과]\n\n"""
     
+    for i in range(0,10):
+        res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text}) \n{rest_link[i].get('href')}\n\n"
+    return res
     
-    
-    return "test"
+def getVs(msgSplit,sender):
+    print(msgSplit)
+    random_choice = random.choice(msgSplit)
+    res = f"""선택이 어려운 "{sender}"님을 위한 결과는~
+[{random_choice}] 입니다!
+"""
+    return res
+
