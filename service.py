@@ -55,7 +55,7 @@ def getWeatherData(area):
     chart = (soup.find("ul",{"class":"today_chart_list"})).text.strip()
     chart = chart.replace("     ","\n")
     
-    res = f'''[현재 {area} 날씨]
+    res = f'''[{area} 날씨]
     
 현재기온 : {now_temp}
 최고 : {up_temp} | 최저 : {down_temp} | 체감 : {feel_temp}
