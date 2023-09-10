@@ -37,9 +37,9 @@ def getWeatherData(area):
     #현재기온
     now_temp = (soup.find("div",{"class":"temperature_text"})).strong.text[5:]
     #최고기온
-    up_temp = (soup.find("span",{"class":"lowest"})).text[4:]
+    up_temp = (soup.find("span",{"class":"highest"})).text[4:]
     #최저기온
-    down_temp = (soup.find("span",{"class":"highest"})).text[4:]
+    down_temp = (soup.find("span",{"class":"lowest"})).text[4:]
     
     #요약
     summary = (soup.find("p",{"class":"summary"})).text.replace("  "," / ")
