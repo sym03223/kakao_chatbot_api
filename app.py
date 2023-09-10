@@ -1,7 +1,18 @@
 from flask import Flask, request
 import service, chatgpt
+import logging
+from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
+
+# 파일 핸들러 설정
+log_handler = RotatingFileHandler('app.log', maxBytes=1024 * 1024 * 10, backupCount=50, encoding='utf-8')
+log_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s '
+    '[in %(pathname)s:%(lineno)d]'
+))
+app.logger.addHandler(log_handler)
 
 zodiac_commands = ["쥐띠","소띠","호랑이띠","토끼띠","용띠","뱀띠","말띠","양띠","원숭이띠","닭띠","개띠","돼지띠"]
 horoscope_commands = ["양","황소","쌍둥이","게","사자","처녀","천칭","전갈","사수","염소","물병","물고기"]
@@ -17,6 +28,8 @@ def do_something():
     room=request.args.get("room")
     isGroupChat=request.args.get("isGroupChat")
     
+    #로그 생성
+    app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
     #print("msg="+msg+", sender="+sender+", room="+room+", isGroupChat="+isGroupChat)
     
     msgSplit = msg.split()
@@ -37,32 +50,36 @@ NAME
     민초봇 -- MintChocoBot
 
 [기본 명령어]
-    !명령어: 인사 & 도움말
+    !명령어, !도움말, !help : 커맨드 목록
     
 [정보 검색]
 
-    !뉴스
-    !날씨
-        사용법 : !날씨 [검색어]
-    !구글
+>>  !뉴스
+>>  !날씨
+        사용법 : !날씨 [오늘|내일|모레] [지역명]
+>>  !구글
         사용법 : !구글 [검색어]
-    !나무
+>>  !나무
         사용법 : !나무 [검색어]
-    !유튜브
+>>  !유튜브
         사용법 : !유튜브 [검색어]
-    !실검
-    !환율
-    !비트
-    !챗
+>>  !맛집        
+        사용법 : !맛집 [지역명]
+>>  !지도
+        사용법 : !지도 [지역명]
+>>  !실검
+>>  !환율
+>>  !비트
+>>  !챗
         사용법 : !챗 [질문]
 
 [재밋거리]
 
-    !운세
+>>  !운세
         사용법 : 띠별운세 - !운세 [띠]
                 별자리운세 - !운세 [별자리]
-    !로또
-    vs 
+>>  !로또
+>>  vs 
         사용법 : [키워드] vs [키워드]
 '''
 
@@ -75,10 +92,9 @@ NAME
                             area = area + msgSplit[i]+" "
                     else:
                         area = msgSplit[1]    
-                    # print("area : "+area.strip())
                     res = service.getWeatherData(area.strip())       
                 else :
-                    res = "지역을 입력해주세요. \n사용법 : !날씨 [지역명]"
+                    res = "지역을 입력해주세요. \n사용법 : !날씨 [오늘|내일|모레] [지역명]"
                     
             elif msgSplit[0] == "!운세":
                 if len(msgSplit)!=1:
@@ -161,17 +177,25 @@ NAME
             elif msgSplit[0] == "!맛집":
                 area = ""
                 if len(msgSplit) != 1:
-                    if len(msgSplit) >= 3:
-                        for i in range(1, len(msgSplit)):
-                            print(i)
-                            area = area + msgSplit[i]+" "
-                    else:
-                        area = msgSplit[1]    
+                    area = msg.replace(msgSplit[0],"").strip()
+                    area = area.replace(" ","+")  
+                    # if len(msgSplit) >= 3:
+                    #     for i in range(1, len(msgSplit)):
+                    #         print(i)
+                    #         area = area + msgSplit[i]+" "
+                    # else:
+                    #     area = msgSplit[1]    
                     res = service.getRestaurantByArea(area.strip())       
                 else :
                     res = "지역을 입력해주세요. \n사용법 : !맛집 [지역명]"
             elif msgSplit[0] == "!지도":
-                print(0)
+                area = ""
+                if len(msgSplit) != 1:
+                    area = msg.replace(msgSplit[0],"").strip()
+                    area = area.replace(" ","+")    
+                    res = service.getMapSearch(area.strip())       
+                else :
+                    res = "지역을 입력해주세요. \n사용법 : !지도 [지역명]"
             elif msgSplit[0] == "!점심추천":
                 print(0)
             elif msgSplit[0] == "!저녁추천":
@@ -184,7 +208,10 @@ NAME
                     res = "챗 GPT에게 질문을 입력해주세요. \n사용법 : !챗 [질문]"
     except Exception as e:
         print(e)
+        app.logger.error(f'response = {e}')    
         res = "오류가 발생하였습니다."
+    
+    app.logger.info(f'response = {res}')
     return (res)
     
 

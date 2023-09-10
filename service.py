@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 from datetime import datetime
 import random
+import time
 import pandas as pd
 
 headers = {"User-Agent":"mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/116.0.0.0 safari/537.36"}
@@ -33,29 +34,34 @@ def getWeatherData(area):
     # 페이지 소스 추출
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
+    
+    check = soup.find_all("li",{"class":"sub_tab item"})
+    
 
-    #현재기온
-    now_temp = (soup.find("div",{"class":"temperature_text"})).strong.text[5:]
-    #최고기온
-    up_temp = (soup.find("span",{"class":"highest"})).text[4:]
-    #최저기온
-    down_temp = (soup.find("span",{"class":"lowest"})).text[4:]
+    if check[0].get("aria-selected")=="true":
+        
+        #현재기온
+        now_temp = (soup.find("div",{"class":"temperature_text"})).strong.text[5:]
+        #최고기온
+        up_temp = (soup.find("span",{"class":"highest"})).text[4:]
+        #최저기온
+        down_temp = (soup.find("span",{"class":"lowest"})).text[4:]
+        
+        #요약
+        summary = (soup.find("p",{"class":"summary"})).text.replace("  "," / ")
+        
+        summary_list = soup.find("dl",{"class":"summary_list"})
+        #체감온도
+        feel_temp = (summary_list.select("div.sort > dd"))[0].text
+        #습도
+        humidity = (summary_list.select("div.sort > dd"))[1].text
+        #풍향
+        wind_direction=(summary_list.select("div.sort > dt"))[2].text + " " +(summary_list.select("div.sort > dd"))[2].text
+        
+        chart = (soup.find("ul",{"class":"today_chart_list"})).text.strip()
+        chart = chart.replace("     ","\n")
     
-    #요약
-    summary = (soup.find("p",{"class":"summary"})).text.replace("  "," / ")
-    
-    summary_list = soup.find("dl",{"class":"summary_list"})
-    #체감온도
-    feel_temp = (summary_list.select("div.sort > dd"))[0].text
-    #습도
-    humidity = (summary_list.select("div.sort > dd"))[1].text
-    #풍향
-    wind_direction=(summary_list.select("div.sort > dt"))[2].text + " " +(summary_list.select("div.sort > dd"))[2].text
-    
-    chart = (soup.find("ul",{"class":"today_chart_list"})).text.strip()
-    chart = chart.replace("     ","\n")
-    
-    res = f'''[{area} 날씨]
+        res = f'''[{area} 날씨]
     
 현재기온 : {now_temp}
 최고 : {up_temp} | 최저 : {down_temp} | 체감 : {feel_temp}
@@ -64,6 +70,46 @@ def getWeatherData(area):
 {summary}
 
 {chart}
+'''
+    else:
+        if check[1].get("aria-selected")=="true":
+            tomorrow_data = soup.find("ul",{"class":"weather_info_list _tomorrow"})
+        elif check[2].get("aria-selected")=="true":
+            tomorrow_data = soup.find("ul",{"class":"weather_info_list _after_tomorrow"})
+            
+        #오전
+        am_temp = (tomorrow_data.select("div._am div div > strong")[0]).text[5:]
+        am_info = (tomorrow_data.select("div._am div.temperature_info > p")[0]).text
+        am_summary = (tomorrow_data.select("div._am div.temperature_info > dl")[0]).text.strip()
+        print(am_temp)
+        print(am_info)
+        print(am_summary)
+        
+        #오후
+        pm_temp = (tomorrow_data.select("div._pm div div > strong")[0]).text[5:]
+        pm_info = (tomorrow_data.select("div._pm div.temperature_info > p")[0]).text
+        pm_summary = (tomorrow_data.select("div._pm div.temperature_info > dl")[0]).text.strip()
+        print(pm_temp)
+        print(pm_info)
+        print(pm_summary)
+        
+        
+        dust = tomorrow_data.select("li.item_today.level1 > a")
+        print(dust[0].text)
+        print(dust[1].text)
+        print(dust[2].text)
+        print(dust[3].text)
+        
+        res = f'''[{area} 날씨]
+<오전>    
+날씨 : {am_info}
+예측기온 : {am_temp} | {am_summary}
+{dust[0].text} | {dust[1].text}
+
+<오후>
+날씨 : {pm_info}
+예측기온 : {pm_temp} | {pm_summary}
+{dust[2].text} | {dust[3].text}
 '''
     return res
     
@@ -279,17 +325,18 @@ def getRestaurantByArea(area):
     # source = requests.get("https://map.kakao.com/?q="+area+"맛집", headers=headers)
     # soup = bs4.BeautifulSoup(source.content,"html.parser")
     driver.get(url) 
+    time.sleep(0.5)
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
     
     rest_names = soup.find_all("a","link_name")
     rest_sub = soup.find_all("span","subcategory clickable")
-    open_time = soup.find_all("p","periodWarp")
+    # open_time = soup.find_all("p","periodWarp")
     rest_link = soup.find_all("a","moreview")
 
-    print(rest_link)
-    res = f"""['{area} 맛집' 카카오맵 검색 결과]\n\n"""
+    res = f"""['{area.replace("+"," ")} 맛집' 카카오맵 검색 결과]\n\n"""
     
+    # count = len(rest_names) if len(rest_names) < 10 else 10
     for i in range(0,10):
         res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text}) \n{rest_link[i].get('href')}\n\n"
     return res
@@ -301,4 +348,8 @@ def getVs(msgSplit,sender):
 [{random_choice}] 입니다!
 """
     return res
+
+def getMapSearch(area):
+    link = "https://map.naver.com/p/search/"+area
+    return link
 

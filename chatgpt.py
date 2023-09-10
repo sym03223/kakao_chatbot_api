@@ -31,8 +31,8 @@ A : {answer}
 
 *Chat GPT-3 모델은 2021년 9월까지의 데이터만 반영되어있습니다.
 """
-    #문-답은 5쌍까지만 기억
-    while(len(messages) > 11):
+    #문-답은 6쌍까지만 기억
+    while(len(messages) > 13):
         messages.pop(1)
     
     return res
