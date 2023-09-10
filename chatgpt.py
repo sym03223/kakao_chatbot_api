@@ -1,6 +1,8 @@
-import openai
+from flask import Flask
+import openai, config
 
-openai.api_key='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'
+openai.api_key=config.chat_gpt_api_key
+
 model = "gpt-3.5-turbo"
 messages = [
         {"role": "system", "content": "답변은 항상 한국어로 해줘."},

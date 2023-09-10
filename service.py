@@ -211,12 +211,9 @@ def getHoroscope(keyword):
     soup = BeautifulSoup(source.content,"html.parser",from_encoding='cp949')
     horoscope_commands = ["양","황소","쌍둥이","게","사자","처녀","천칭","전갈","사수","염소","물병","물고기"]
     scope = horoscope_commands.index(keyword) if keyword in horoscope_commands else None
-    print(scope)
+    
     element = soup.find(id=f"result_{int(scope+1)}")
     contents = element.select("div.today_item > div.desc")[0]
-    print(contents)
-    
-    
     now = datetime.now()
     # 원하는 형식으로 포맷팅
     formatted_now = now.strftime("%Y년 %m월 %d일")
