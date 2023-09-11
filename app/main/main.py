@@ -79,6 +79,7 @@ NAME
 
 [재밋거리]
 
+>>  !메뉴추천
 >>  !운세
         사용법 : 띠별운세 - !운세 [띠]
                 별자리운세 - !운세 [별자리]
@@ -194,8 +195,8 @@ NAME
                     res = service.getMapSearch(area.strip())       
                 else :
                     res = "지역을 입력해주세요. \n사용법 : !지도 [지역명]"
-            elif msgSplit[0] == "!점심추천":
-                print(0)
+            elif msgSplit[0] == "!메뉴추천":
+                res = service.getMenu(sender)
             elif msgSplit[0] == "!저녁추천":
                 print(0)
             elif msgSplit[0] == "!채팅순위":

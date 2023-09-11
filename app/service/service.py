@@ -10,8 +10,10 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import random
 import time
-import pandas as pd
-import re
+from app import db
+from sqlalchemy.sql import func
+from app.model.menues import menues
+
 
 headers = {"User-Agent":"mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/116.0.0.0 safari/537.36"}
 options = webdriver.ChromeOptions()
@@ -357,3 +359,10 @@ def getMapSearch(area):
 def getChatRank():
     
     return "아직 개발 중"
+
+def getMenu(sender):
+    random_menu = db.session.query(menues).order_by(func.rand()).first()
+    res=f"""\U00002728{sender}님\U00002728을 위한 추천메뉴!
+[{random_menu.menu}] 어떠신가요?\U0001F61D
+"""
+    return res
