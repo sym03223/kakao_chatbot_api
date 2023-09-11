@@ -28,18 +28,17 @@ def do_something():
     room=request.args.get("room")
     isGroupChat=request.args.get("isGroupChat")
     
-    #로그 생성
-    app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
-    #print("msg="+msg+", sender="+sender+", room="+room+", isGroupChat="+isGroupChat)
-    
     msgSplit = msg.split()
-    res = "명령을 인식할 수 없습니다."
+    res = "none"
     try:
         if "vs" in msg:
             msgSplit = (msg.replace(" ","")).split("vs")
             res = service.getVs(msgSplit,sender)
+             #로그 생성
+            app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
 
         if msgSplit[0][0] == "!":
+            
             if msgSplit[0] in ["!명령어","!도움말","!help"]:
                 res = f'''안녕하세요, {sender}님!\U0001F60D
 민초사랑 나라사랑 챗봇 민초봇입니다\U0001F603
@@ -167,13 +166,7 @@ NAME
             elif msgSplit[0] == "!환율":
                 res = service.getExchangeRate()
             elif msgSplit[0] == "!비트":
-                if len(msgSplit)!=1:
-                    keyword = msg.replace(msgSplit[0],"").strip()
-                    keyword = keyword.replace(" ","+")  
-                    print(keyword)
-                    res = service.youtubeSearch(keyword)
-                else :
-                    res = service.getAllCoins()
+                res = service.getAllCoins()
             elif msgSplit[0] == "!맛집":
                 area = ""
                 if len(msgSplit) != 1:
@@ -200,24 +193,29 @@ NAME
                 print(0)
             elif msgSplit[0] == "!저녁추천":
                 print(0)
+            elif msgSplit[0] == "!채팅순위":
+                res = service.getChatRank()
             elif msgSplit[0] == "!챗":
                 if len(msgSplit)!=1:
                     question = msg.replace(msgSplit[0],"").strip()
                     res = chatgpt.requestApi(question,sender)
                 else :
                     res = "챗 GPT에게 질문을 입력해주세요. \n사용법 : !챗 [질문]"
+            else:
+                res = "명령을 인식할 수 없습니다.\n!명령어로 명령어를 조회할 수 있습니다."
+           
     except Exception as e:
         print(e)
-        app.logger.error(f'response = {e}')    
+        app.logger.error(f'response = {e}')
         res = "오류가 발생하였습니다."
     
-    app.logger.info(f'response = {res}')
+    if res != 'none':
+        #로그 생성
+        app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
+        app.logger.info(f'response = {res}')    
     return (res)
     
 
-
-
-    
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
     

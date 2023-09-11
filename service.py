@@ -11,6 +11,7 @@ from datetime import datetime
 import random
 import time
 import pandas as pd
+import re
 
 headers = {"User-Agent":"mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/116.0.0.0 safari/537.36"}
 options = webdriver.ChromeOptions()
@@ -353,3 +354,6 @@ def getMapSearch(area):
     link = "https://map.naver.com/p/search/"+area
     return link
 
+def getChatRank():
+    
+    return "아직 개발 중"
