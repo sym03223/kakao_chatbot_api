@@ -1,13 +1,16 @@
 from flask import Flask, request
-import service, chatgpt
+from app.service import service, chatgpt
 import logging
 from logging.handlers import RotatingFileHandler
+from app import app, db
 
-app = Flask(__name__)
+from app.model.chats import chats
+
+
+
 app.logger.setLevel(logging.INFO)
-
 # 파일 핸들러 설정
-log_handler = RotatingFileHandler('app.log', maxBytes=1024 * 1024 * 10, backupCount=50, encoding='utf-8')
+log_handler = RotatingFileHandler('./logs/app.log', maxBytes=1024 * 1024 * 10, backupCount=50, encoding='utf-8')
 log_handler.setFormatter(logging.Formatter(
     '%(asctime)s %(levelname)s: %(message)s '
     '[in %(pathname)s:%(lineno)d]'
@@ -17,16 +20,18 @@ app.logger.addHandler(log_handler)
 zodiac_commands = ["쥐띠","소띠","호랑이띠","토끼띠","용띠","뱀띠","말띠","양띠","원숭이띠","닭띠","개띠","돼지띠"]
 horoscope_commands = ["양","황소","쌍둥이","게","사자","처녀","천칭","전갈","사수","염소","물병","물고기"]
 
-@app.route("/hello", methods=['GET'])
-def hello():
-  return "hello world"
-
 @app.route("/dosomething", methods=['GET'])
 def do_something():
+
     msg=request.args.get("msg")
     sender=request.args.get("sender")
     room=request.args.get("room")
     isGroupChat=request.args.get("isGroupChat")
+    
+    # db 로깅
+    new_chat = chats(room=room, sender=sender, msg=msg, isGroupChat=bool(isGroupChat))
+    db.session.add(new_chat)
+    db.session.commit()
     
     msgSplit = msg.split()
     res = "none"
@@ -214,8 +219,3 @@ NAME
         app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
         app.logger.info(f'response = {res}')    
     return (res)
-    
-
-if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=5000)
-    

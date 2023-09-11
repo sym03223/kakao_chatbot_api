@@ -1,7 +1,7 @@
 from flask import Flask
-import openai, config
+import openai, app.config.config
 
-openai.api_key=config.chat_gpt_api_key
+openai.api_key=app.config.config.chat_gpt_api_key
 
 model = "gpt-3.5-turbo"
 messages = [
