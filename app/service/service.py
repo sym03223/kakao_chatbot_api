@@ -97,12 +97,13 @@ def getWeatherData(area):
         print(pm_summary)
         
         
-        dust = tomorrow_data.select("li.item_today.level1 > a")
+        dust = tomorrow_data.select("li > a")
+        print(dust)
         print(dust[0].text)
         print(dust[1].text)
         print(dust[2].text)
         print(dust[3].text)
-        
+        print("dududududu")
         res = f'''[{area} 날씨]
 <오전>    
 날씨 : {am_info}
@@ -154,7 +155,7 @@ def youtubeSearch(keyword):
     res = f"""[\"{keyword.replace("+"," ")}\" 유튜브 검색 결과입니다.]"""
     res = res+"\n\n"
     for i in range(0,5):
-        res = res + content_total_title[i] + "\n" + content_total_link[i]
+        res = res + str(i+1)+". "+ content_total_title[i] + "\n" + content_total_link[i]
         res = res + "\n\n"
     
     return res.strip()
@@ -227,9 +228,10 @@ def realtime():
 """
     res=res+"\n"
     
-    for i in range(0, 9):
+    for i in range(0, 10):
         res = res + rank_num[i].text+". "+rank_text[i].text+"\n"
-            
+    
+    res = res + "\n(출처 : 시그널 실시간검색어)"
     return res.strip()
 
 def getZodiac(keyword):
@@ -328,7 +330,7 @@ def getRestaurantByArea(area):
     # source = requests.get("https://map.kakao.com/?q="+area+"맛집", headers=headers)
     # soup = bs4.BeautifulSoup(source.content,"html.parser")
     driver.get(url) 
-    time.sleep(0.5)
+    time.sleep(1)
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
     
@@ -339,8 +341,8 @@ def getRestaurantByArea(area):
 
     res = f"""['{area.replace("+"," ")} 맛집' 카카오맵 검색 결과]\n\n"""
     
-    # count = len(rest_names) if len(rest_names) < 10 else 10
-    for i in range(0,10):
+    count = len(rest_names) if len(rest_names) < 10 else 10
+    for i in range(0,count):
         res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text}) \n{rest_link[i].get('href')}\n\n"
     return res
     
