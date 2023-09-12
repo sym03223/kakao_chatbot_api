@@ -7,7 +7,7 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import pandas as pd
 import numpy as np
@@ -370,26 +370,23 @@ def getMapSearch(area):
     return link
 
 def getChatRank(room,sender):
-    from sqlalchemy import desc
+    from sqlalchemy import desc  
     results = (
         db.session.query(chats.sender, func.count().label('cnt'))
-        .filter(chats.room == room)
+        .filter(chats.room == "방구석 인력 사무소")
         .group_by(chats.sender)
         .order_by(desc('cnt'))
         .all()
     )
-    res=f"""[{room}]채팅방의 채팅순위입니다.
+    res = f"[{room}]채팅방의 채팅순위입니다.\n\n"
+    total_count = sum(result.cnt for result in results)
+    max_count = max(result.cnt for result in results)
+    min_count = min(result.cnt for result in results)
+    level_range = max_count - min_count
 
-"""
-    sum=0
-    for result in results:
-        sum = sum + result.cnt
-        
-    for index,result in enumerate(results):
-        per = round(int(result.cnt)/sum*100,1)
-        level = int(per//10)
-        res=res+f"{index+1}위 {sender}님-채팅{result.cnt}개({per}%) Lv.{level}"
-        res=res+"\n\n"
+    for index, result in enumerate(results):
+        level = round(((result.cnt - min_count) / level_range) * 9) + 1
+        res += f"{index+1}위 {result.sender} - 채팅 {result.cnt}개 ({result.cnt/total_count*100:.1f}% Lv.{level})\n\n"
     
     return res
 
@@ -488,7 +485,7 @@ def getStockData(stock_name,sender):
 
 #종목명 -> 종목코드
 def get_stock_code(stock_name):
-    now = datetime.now()
+    now = datetime.now() - timedelta(days=1)
     formatted_now = now.strftime("%Y%m%d")
     
     df = stock.get_market_price_change(formatted_now, formatted_now ,market="ALL")

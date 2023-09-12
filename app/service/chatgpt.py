@@ -9,13 +9,13 @@ messages = [
     ]
 
 def requestApi(question,sender):
-    
+    global messages
     if question in ["리셋","reset","초기화"]:
-       messages = [
-            {"role": "system", "content": "답변은 항상 한국어로 해줘."},
-       ]
-       res = "chatGPT가 초기화 되었습니다."
-       return res
+        messages = [
+                {"role": "system", "content": "답변은 항상 한국어로 해줘."},
+        ]
+        res = "chatGPT가 초기화 되었습니다."
+        return res
     
     messages.append({"role": "user", "content": question})
     
@@ -38,6 +38,7 @@ A : {answer}
 *Chat GPT-3 모델은 2021년 9월까지의 데이터만 반영되어있습니다.
 """
     #문-답은 6쌍까지만 기억
+    print(len(messages))
     while(len(messages) > 13):
         messages.pop(1)
     

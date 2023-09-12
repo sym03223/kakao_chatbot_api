@@ -28,7 +28,7 @@ def do_something():
     room=request.args.get("room")
     isGroupChat=request.args.get("isGroupChat")
     
-    ## 개발용... 주인이 아니면 다 넘김
+    # 개발용... 주인이 아니면 다 넘김
     if sender != "주인":
         res = "none"
         return res
@@ -80,7 +80,7 @@ NAME
 >>  !주식
         !주식 [종목명]
 >>  !챗
-        !챗 [질문]
+        !챗 [질문] (ps. !챗 리셋|reset|초기화 시 리셋됨)
 
 [재밋거리]
 
