@@ -3,7 +3,7 @@ from app.service import service, chatgpt
 import logging
 from logging.handlers import RotatingFileHandler
 from app import app, db
-
+import traceback
 from app.model.chats import chats
 
 
@@ -28,6 +28,11 @@ def do_something():
     room=request.args.get("room")
     isGroupChat=request.args.get("isGroupChat")
     
+    ## 개발용... 주인이 아니면 다 넘김
+    if sender != "주인":
+        res = "none"
+        return res
+    
     # db 로깅
     new_chat = chats(room=room, sender=sender, msg=msg, isGroupChat=bool(isGroupChat))
     db.session.add(new_chat)
@@ -37,11 +42,9 @@ def do_something():
     res = "none"
     try:
         if "vs" in msg:
-            msgSplit = (msg.replace(" ","")).split("vs")
+            msgSplit = msg.split("vs")
             res = service.getVs(msgSplit,sender)
-             #로그 생성
-            app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
-
+            
         if msgSplit[0][0] == "!":
             
             if msgSplit[0] in ["!명령어","!도움말","!help"]:
@@ -60,32 +63,36 @@ NAME
 
 >>  !뉴스
 >>  !날씨
-        사용법 : !날씨 [오늘|내일|모레] [지역명]
+        !날씨 [오늘|내일|모레] [지역명]
 >>  !구글
-        사용법 : !구글 [검색어]
+        !구글 [검색어]
 >>  !나무
-        사용법 : !나무 [검색어]
+        !나무 [검색어]
 >>  !유튜브
-        사용법 : !유튜브 [검색어]
+        !유튜브 [검색어]
 >>  !맛집        
-        사용법 : !맛집 [지역명]
+        !맛집 [검색어/지역명]
 >>  !지도
-        사용법 : !지도 [지역명]
+        !지도 [지역명]
 >>  !실검
 >>  !환율
 >>  !비트
+>>  !주식
+        !주식 [종목명]
 >>  !챗
-        사용법 : !챗 [질문]
+        !챗 [질문]
 
 [재밋거리]
 
 >>  !메뉴추천
 >>  !운세
-        사용법 : 띠별운세 - !운세 [띠]
-                별자리운세 - !운세 [별자리]
+        띠별운세 - !운세 [띠]
+        별자리운세 - !운세 [별자리]
 >>  !로또
 >>  vs 
-        사용법 : [키워드] vs [키워드]
+        [키워드] vs [키워드]
+>> !채팅순위
+>> !테스트
 '''
 
             elif msgSplit[0] == "!날씨":
@@ -200,18 +207,29 @@ NAME
             elif msgSplit[0] == "!저녁추천":
                 print(0)
             elif msgSplit[0] == "!채팅순위":
-                res = service.getChatRank()
+                res = service.getChatRank(room,sender)
             elif msgSplit[0] == "!챗":
                 if len(msgSplit)!=1:
                     question = msg.replace(msgSplit[0],"").strip()
                     res = chatgpt.requestApi(question,sender)
                 else :
                     res = "챗 GPT에게 질문을 입력해주세요. \n사용법 : !챗 [질문]"
+            elif msgSplit[0] == "!테스트":
+                res = service.getRandomTest()
+            elif msgSplit[0] == "!주식":
+                if len(msgSplit) != 1:
+                    stock_name = msg.replace(msgSplit[0],"").strip()
+                    stock_name = stock_name.replace(" ","") 
+                    res = service.getStockData(stock_name,sender)
+                else :
+                    res = "종목명을 입력해주세요. \n사용법 : !주식 [종목명]"
+
             else:
                 res = "명령을 인식할 수 없습니다.\n!명령어로 명령어를 조회할 수 있습니다."
-           
+            
     except Exception as e:
         print(e)
+        traceback.print_exc()
         app.logger.error(f'response = {e}')
         res = "오류가 발생하였습니다."
     

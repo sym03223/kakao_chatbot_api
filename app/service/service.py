@@ -9,11 +9,15 @@ from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 from datetime import datetime
 import random
+import pandas as pd
+import numpy as np
 import time
 from app import db
 from sqlalchemy.sql import func
 from app.model.menues import menues
-
+from app.model.chats import chats
+import re
+from pykrx import stock
 
 headers = {"User-Agent":"mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/116.0.0.0 safari/537.36"}
 options = webdriver.ChromeOptions()
@@ -133,7 +137,15 @@ def googleSearch(keyword):
     return link
 
 def namuSearch(keyword):
-    link = "https://namu.wiki/w/"+keyword
+    URL = "https://www.google.com/search?q="+keyword
+    # 크롬 드라이버를 통해 지정한 URL의 웹 페이지 오픈
+    driver.get(URL)
+    html_source = driver.page_source
+    soup_source = BeautifulSoup(html_source, 'html.parser')
+    
+    html = soup_source.find("div",{"class":"yuRUbf"})
+    link = (html.select("div span > a")[0]).get("href")
+    
     return link
 
 def youtubeSearch(keyword):
@@ -327,8 +339,7 @@ def getAllCoins():
 def getRestaurantByArea(area):
     
     url = "https://map.kakao.com/?q="+area+"맛집"
-    # source = requests.get("https://map.kakao.com/?q="+area+"맛집", headers=headers)
-    # soup = bs4.BeautifulSoup(source.content,"html.parser")
+    
     driver.get(url) 
     time.sleep(1)
     html_source = driver.page_source
@@ -350,7 +361,7 @@ def getVs(msgSplit,sender):
     print(msgSplit)
     random_choice = random.choice(msgSplit)
     res = f"""선택이 어려운 "{sender}"님을 위한 결과는~
-[{random_choice}] 입니다!
+[{random_choice.strip()}] 입니다!
 """
     return res
 
@@ -358,9 +369,29 @@ def getMapSearch(area):
     link = "https://map.naver.com/p/search/"+area
     return link
 
-def getChatRank():
+def getChatRank(room,sender):
+    from sqlalchemy import desc
+    results = (
+        db.session.query(chats.sender, func.count().label('cnt'))
+        .filter(chats.room == room)
+        .group_by(chats.sender)
+        .order_by(desc('cnt'))
+        .all()
+    )
+    res=f"""[{room}]채팅방의 채팅순위입니다.
+
+"""
+    sum=0
+    for result in results:
+        sum = sum + result.cnt
+        
+    for index,result in enumerate(results):
+        per = round(int(result.cnt)/sum*100,1)
+        level = int(per//10)
+        res=res+f"{index+1}위 {sender}님-채팅{result.cnt}개({per}%) Lv.{level}"
+        res=res+"\n\n"
     
-    return "아직 개발 중"
+    return res
 
 def getMenu(sender):
     random_menu = db.session.query(menues).order_by(func.rand()).first()
@@ -368,3 +399,103 @@ def getMenu(sender):
 [{random_menu.menu}] 어떠신가요?\U0001F61D
 """
     return res
+
+def getRandomTest():
+    contens_url = ["https://www.simcong.com/", "https://www.banggooso.com/"]
+    
+    url = random.choice(contens_url)
+    
+    source = requests.get(url, headers=headers)
+    soup = bs4.BeautifulSoup(source.content,"html.parser")
+    res = ""
+    if url == contens_url[0]:
+        links = [item.a['href'] for item in soup.find_all('li', {'class': 'main_hot_item'})]
+        get_one_link = random.choice(links)
+        res = url+get_one_link
+    elif url == contens_url[1]:
+        feed_list = soup.find('ul', {'class': 'feed-list'})
+        links = [item.a['href'] for item in feed_list.select("ul > li")]
+        get_one_link = random.choice(links)
+        if get_one_link.startswith("javascript"):
+            res = extract_url(get_one_link)
+        else:
+            res = url+get_one_link
+    return res
+
+#문자열에서 링크만 추출
+def extract_url(input_string):
+    pattern = r'(https?://[^\s"\';]+)'
+    url = re.search(pattern, input_string)
+    if url:
+        return url.group(0)
+    else:
+        return None
+
+def getStockData(stock_name,sender):
+    stock_code = get_stock_code(stock_name)
+    if stock_code == 'none':
+        return "존재하지 않는 종목입니다."
+    
+    url = "https://finance.naver.com/item/main.naver?code="+stock_code
+    
+    driver.get(url) 
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source, 'html.parser')
+    today = soup.find('div', {'class':'rate_info'})
+    
+    down_emoji = "\U0001F4C9"
+    up_emoji = "\U0001F4C8"
+    now = datetime.now()
+    formatted_now = now.strftime("%Y년 %m월 %d일 %H시 %M분")
+    
+    today_price = today.select("div p.no_today em.no_down > span ")
+    today_price = ''.join([item.text for item in today_price])
+    
+    no_exday = today.select("div p.no_exday > em.no_down")
+    no_exday_text1=(no_exday[0].text).replace("\n","")
+    no_exday_text2=(no_exday[1].text).replace("\n","")
+    no_exday_info=""
+    
+    if "상승" in no_exday_text1:
+        no_exday_info = f"전일대비 {up_emoji}{no_exday_text1} | {no_exday_text2}"
+    elif "하락" in no_exday_text1:
+        no_exday_info = f"전일대비 {down_emoji}{no_exday_text1} | {no_exday_text2}"
+    
+    summary_info = soup.find('table', {'class':'no_info'})
+    summary = summary_info.select("tbody tr td > em")
+    highest = (summary[1].text).replace("\n","")
+    lowest = (summary[4].text).replace("\n","")
+    upper_limit = (summary[2].text).replace("\n","")
+    lower_limit = (summary[6].text).replace("\n","")
+    trading_volume = (summary[3].text).replace("\n","")
+    transaction_amount = (summary[7].text).replace("\n","")
+    print(upper_limit)
+    print(lower_limit)
+    
+    	
+    res=f"""\U0001F4B0[{stock_name}]의 실시간 주가정보!\U0001F4B0
+현재시각 : {formatted_now}
+
+시장가 : {today_price}원
+등락율 : {no_exday_info}
+
+고가 : {highest} (상한가:{upper_limit})
+저가 : {lowest} (하한가:{lower_limit})
+거래량 : {trading_volume}
+거래대금 : {transaction_amount}백만
+"""
+    return res
+
+#종목명 -> 종목코드
+def get_stock_code(stock_name):
+    now = datetime.now()
+    formatted_now = now.strftime("%Y%m%d")
+    
+    df = stock.get_market_price_change(formatted_now, formatted_now ,market="ALL")
+    row = df[df['종목명'] == stock_name]
+    if len(row)==0:
+        return "none"    
+    else:
+        stock_code = row.index[0]
+    
+    return stock_code

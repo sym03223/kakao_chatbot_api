@@ -10,6 +10,12 @@ messages = [
 
 def requestApi(question,sender):
     
+    if question in ["리셋","reset","초기화"]:
+       messages = [
+            {"role": "system", "content": "답변은 항상 한국어로 해줘."},
+       ]
+       res = "chatGPT가 초기화 되었습니다."
+       return res
     
     messages.append({"role": "user", "content": question})
     
