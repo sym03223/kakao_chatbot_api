@@ -63,7 +63,9 @@ NAME
 
 >>  !뉴스
 >>  !날씨
-        !날씨 [오늘|내일|모레] [지역명]
+        !날씨 [지역명]
+>>  !예보
+        !예보 [지역명]
 >>  !구글
         !구글 [검색어]
 >>  !나무
@@ -93,6 +95,7 @@ NAME
         [키워드] vs [키워드]
 >> !채팅순위
 >> !테스트
+>> !한강온도
 '''
 
             elif msgSplit[0] == "!날씨":
@@ -104,9 +107,22 @@ NAME
                             area = area + msgSplit[i]+" "
                     else:
                         area = msgSplit[1]    
-                    res = service.getWeatherData(area.strip())       
+                    res = service.getTodayWeather(area.strip())       
                 else :
-                    res = "지역을 입력해주세요. \n사용법 : !날씨 [오늘|내일|모레] [지역명]"
+                    res = "지역을 입력해주세요. \n사용법 : !날씨 [지역명]"
+                    
+            elif msgSplit[0] == "!예보":
+                area = ""
+                if len(msgSplit) != 1:
+                    if len(msgSplit) >= 3:
+                        for i in range(1, len(msgSplit)):
+                            print(i)
+                            area = area + msgSplit[i]+" "
+                    else:
+                        area = msgSplit[1]    
+                    res = service.getTomorrowWeather(area.strip())       
+                else :
+                    res = "지역을 입력해주세요. \n사용법 : !예보 [지역명]"
                     
             elif msgSplit[0] == "!운세":
                 if len(msgSplit)!=1:
@@ -204,8 +220,6 @@ NAME
                     res = "지역을 입력해주세요. \n사용법 : !지도 [지역명]"
             elif msgSplit[0] == "!메뉴추천":
                 res = service.getMenu(sender)
-            elif msgSplit[0] == "!저녁추천":
-                print(0)
             elif msgSplit[0] == "!채팅순위":
                 res = service.getChatRank(room,sender)
             elif msgSplit[0] == "!챗":
@@ -226,7 +240,18 @@ NAME
                     res = service.getStockData(stock_name,sender)
                 else :
                     res = "종목명을 입력해주세요. \n사용법 : !주식 [종목명]"
-
+            elif msgSplit[0] == "!한강온도":
+                res = service.getHanRiverTemp()
+            elif msgSplit[0] == "!자살":
+                res = service.getSuicide(sender)
+            elif msgSplit[0] in ["!고마워","!감사해","!넌최고야","!사랑해","!재밌어"]:
+                res = service.getThanks()
+            elif msgSplit[0] in ["!죽을래?","!뒤질래?","!뒤지고싶냐?","!죽고싶냐?","!병신","!병신새끼","!씨발새끼","!시발놈","!씨발럼","!시발롬","!시발련아","!씨발련아","!시발련","!씨발련"]:
+                res = service.getSorry()
+            elif msgSplit[0] == "!강퇴":
+                res = service.getOut()
+            elif msgSplit[0] == "!섹스":
+                res = service.getHentai()
             else:
                 res = "명령을 인식할 수 없습니다.\n!명령어로 명령어를 조회할 수 있습니다."
             

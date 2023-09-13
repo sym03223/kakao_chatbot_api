@@ -120,6 +120,105 @@ def getWeatherData(area):
 {dust[2].text} | {dust[3].text}
 '''
     return res
+
+def getTodayWeather(area):
+    
+    source = requests.get("https://search.daum.net/search?q="+area+"%20날씨",headers=headers)
+    soup = BeautifulSoup(source.content,"html.parser")
+    
+    cont_today = soup.find("div",{"class":"cont_today"})
+    desc_temp = (cont_today.select("div.info_temp div span span > span"))[0].text
+    now_temp = (cont_today.select("div.info_temp div span span > strong"))[0].text
+    txt_desc = (cont_today.select("div.info_temp > p"))[0].text
+    wind = (cont_today.select("dl.dl_weather > dt"))[0].text + " " + (cont_today.select("dl.dl_weather > dd"))[0].text
+    humidity = (cont_today.select("dl.dl_weather > dt"))[1].text + " " + (cont_today.select("dl.dl_weather > dd"))[1].text
+    fine_dust = (cont_today.select("dl.dl_weather > dt"))[2].text + " " + (cont_today.select("dl.dl_weather > dd"))[2].text
+
+    area_hourly = soup.find("div",{"class":"area_hourly"})
+    weather_hourly =  [item.select_one(".ico_nws").text for item in area_hourly.select("ul.list_hourly > li")]
+    area_rain = soup.find("div",{"class":"area_rain"})
+    rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
+    area_wind = soup.find("div",{"class":"area_wind"})
+    wind_hourly = [item.select_one(".txt_num").text for item in area_wind.select("ul.list_hourly > li")]
+    wind_direct_hourly = [item.select_one(".ico_wind").text for item in area_wind.select("ul.list_hourly > li")]
+    area_damp = soup.find("div",{"class":"area_damp"})
+    damp_hourly = [item.select_one(".txt_num").text for item in area_damp.select("ul.list_hourly > li")]
+    
+    data_hourly = ""
+    for i in range (0, len(weather_hourly)):
+        data_hourly = data_hourly + f"{str(i)}시:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
+
+    
+    area_tab = soup.find("div",{"class":"tab_region"})
+    local_area = [item.text for item in area_tab.select("ul.list_tab > li")]
+    local_area = " ".join([item.strip() for item in local_area if item.strip() not in ["전국", "시·군·구", "읍·면·동"] and not item.strip().startswith("다른")])
+
+    res = f"""[{area} 날씨 정보]
+위치: {local_area}
+온도: {now_temp} 
+날씨: {desc_temp} ({txt_desc})   
+{wind} | {humidity} | {fine_dust}
+
+{data_hourly}
+*(출처 : 다음날씨)
+"""
+    return res
+    
+def getTomorrowWeather(area):
+    
+    source = requests.get("https://search.daum.net/search?q="+"내일%20"+area+"%20날씨",headers=headers)
+    soup = BeautifulSoup(source.content,"html.parser")
+    
+    cont_tomorrow = soup.find("div",{"class":"cont_tomorrow"})
+    am_weather = (cont_tomorrow.select("div.info_tomorrow span.tit_ampm > span.txt_weather"))[0].text
+    am_temp = (cont_tomorrow.select("div.info_tomorrow span.desc_temp > strong.txt_temp"))[0].text
+    pm_weather = (cont_tomorrow.select("div.info_tomorrow span.tit_ampm > span.txt_weather"))[1].text
+    pm_temp = (cont_tomorrow.select("div.info_tomorrow span.desc_temp > strong.txt_temp"))[1].text
+    
+    print(am_weather)
+    print(am_temp)
+    print(pm_weather)
+    print(pm_temp)
+    
+    area_hourly = soup.find("div",{"class":"area_hourly"})
+    weather_hourly =  [item.select_one(".ico_nws").text for item in area_hourly.select("ul.list_hourly > li")]
+    area_rain = soup.find("div",{"class":"area_rain"})
+    rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
+    area_wind = soup.find("div",{"class":"area_wind"})
+    wind_hourly = [item.select_one(".txt_num").text for item in area_wind.select("ul.list_hourly > li")]
+    wind_direct_hourly = [item.select_one(".ico_wind").text for item in area_wind.select("ul.list_hourly > li")]
+    area_damp = soup.find("div",{"class":"area_damp"})
+    damp_hourly = [item.select_one(".txt_num").text for item in area_damp.select("ul.list_hourly > li")]
+    
+    data_hourly = ""
+    for i in range (0, len(weather_hourly)):
+        data_hourly = data_hourly + f"{str(i)}시:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
+
+    
+    area_tab = soup.find("div",{"class":"tab_region"})
+    local_area = [item.text for item in area_tab.select("ul.list_tab > li")]
+    local_area = " ".join([item.strip() for item in local_area if item.strip() not in ["전국", "시·군·구", "읍·면·동"] and not item.strip().startswith("다른")])
+
+    res = f"""[내일 {area} 날씨 정보]
+위치: {local_area}
+오전: {am_weather}({am_temp})
+오후: {pm_weather}({pm_temp})
+
+{data_hourly}
+*(출처 : 다음날씨)
+"""
+    return res
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
 def getLottery(sender):
     lotto_numbers = random.sample(range(1, 46), 6)
@@ -204,7 +303,7 @@ def getNews(keyword):
     return res
 
 def getNewsSearch(keyword):
-    source = requests.get("https://search.naver.com/search.naver?where=news&sm=tab_jum&query=" + keyword)
+    source = requests.get("https://search.naver.com/search.naver?where=news&sm=tab_jum&query=" + keyword,headers=headers)
     soup = bs4.BeautifulSoup(source.content,"html.parser")
     news_list = soup.find(class_="list_news")
     news_company = news_list.select("div.info_group > a.info.press")
@@ -348,13 +447,14 @@ def getRestaurantByArea(area):
     rest_names = soup.find_all("a","link_name")
     rest_sub = soup.find_all("span","subcategory clickable")
     # open_time = soup.find_all("p","periodWarp")
+    rest_address = soup.find_all("div","addr")
     rest_link = soup.find_all("a","moreview")
 
     res = f"""['{area.replace("+"," ")} 맛집' 카카오맵 검색 결과]\n\n"""
     
     count = len(rest_names) if len(rest_names) < 10 else 10
     for i in range(0,count):
-        res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text}) \n{rest_link[i].get('href')}\n\n"
+        res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text})\n주소: {rest_address[i].p.text} \n링크: {rest_link[i].get('href')}\n\n"
     return res
     
 def getVs(msgSplit,sender):
@@ -506,3 +606,87 @@ def get_stock_code(stock_name):
         stock_code = row.index[0]
     
     return stock_code
+
+def getHanRiverTemp():
+    
+    driver.get("https://hangang.ivlis.kr/") 
+    time.sleep(1)
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source, 'html.parser')
+    
+    section = soup.find("div",{"class":"title-desc"})
+    river_temp = section.select("div.title-desc > h1")
+    sentence = section.select("div.title-desc > h4")    
+    
+    res = f"""[현재 한강물 온도]
+
+온도 : {river_temp[0].text}
+{sentence[0].text}
+"""
+    return res
+    
+def getSorry():
+    apology_sentences = [
+        "진심으로 사과드립니다. 실수를 반성하고 더 나은 방향으로 나아가겠습니다.",
+        "말로는 다 할 수 없는 미안한 마음을 사과로 전합니다.",
+        "지나간 일에 대해 깊이 뉘우치며 진심으로 사죄의 말씀을 드립니다.",
+        "당신께 정중히 고개 숙여서 사과의 말씀을 전하고자 합니다.",
+        "속 깊은 곳에서 나오는 진심 어린 사과의 말씀입니다.",
+        "저의 부주의로 인해 상처를 드렸음에 대해 깊이 반성하며 송구스럽게도 사과드립니다.",
+        "사람은 실수할 수밖에 없지만, 그 실수를 인정하고 책임질 줄 아는 자세로 정중한 사과를 드리겠습니다.",
+        "마음이 아프시겠지만, 제 진심 어린 송구와 함께 겸허한 사과의 말씀을 전합니다.",
+        "당신께 헌신하는 마음에서 비롯된 작은 실수에 대하여 진심으로 송구하며 참회하는 말씀입니다.",
+        "상대방을 배려하지 못한 행동에 대하여 스스로 반성하고 죄송함을 표현하기 위해 이 자리를 빌리게 되었습니다.",
+        "내 잘못인 걸 알면서도 당신께 참회와 변명 없는 진심어린 사과의 말씀을 전합니다.",
+        "불미스러운 일로 인해 상처입힌 것에 대하여 깊이 후회하며 당당한 자세로 고개 숙여서 송구드립니다.",
+        "상대방께 예상치 못한 아픔을 안겨드려 대단히 죄송합니다",
+        "제가 저지른 잘못에 기인한 모든 상황들이 해결될 수 있길 바라며 마음속에서 영원한 용서와 감사함을 담아낼 때까지 기다리겠습니다",
+        "제가 지난 시간 동안 보여준 모습들 때문에 주변분들께 힘이 될 수 있는 가치있는 시간들 보내기 위해서 최선을 다할 것임을 약속드리며 마음속으로도 다시 한 번 죄송합니다.",
+        "나태와 부주의함으로 당신을 이런 지친 모습으로 만든 것 같아 너무나 미안합니다."
+    ]
+    res = random.choice(apology_sentences)
+    return res
+    
+def getThanks():
+    thankful_sentences = [
+        "진심으로 감사드립니다. 정말로 도움이 되었습니다.",
+        "너무나 고맙다는 말로 표현할 수 없을 만큼 감사합니다.",
+        "정말로 감사합니다! 너무 큰 도움이 되었습니다.",
+        "고맙다는 말로 다 표현할 수 없을 정도로 감사드립니다.",
+        "너무나 소중한 도움에 진심으로 감사의 말씀을 전합니다.",
+        "정말 고맙습니다! 이렇게 큰 도움을 주셔서 정말 감사합니다.",
+        "강력하게 고맙다는 말씀을 전하고 싶습니다!",
+        "진심으로 감사드리며, 저에게 주신 선물에 대해 깊은 사례를 드립니다.",
+        "소중한 시간과 노력에 대해 깊은 존경과 감사의 마음을 전합니다.",
+        "정말 감사합니다! 이런 큰 호의를 받아서 영원히 잊지 않겠습니다.",
+        "너무나 소중한 선물에 대해 진심으로 고개 숙여서 감사의 인사를 드립니다.",
+        "비록 제가 할수잇는 일들보단 한참 못하지만 제가 할수 있는 최대한의 만큼 보답 하겠습니다",
+        "당신의 도움으로 마음이 따뜻해지고, 감사의 빛이 내 삶을 비추어 줍니다.",
+        "감사는 마음을 풍요롭게 만들어주는 신비한 힘이며, 그 힘은 당신에게서 얻어갑니다.",
+        "나에게 미소를 선물해준 당신께 깊은 감사를 드리며, 그 미소가 영원토록 가득하길 바랍니다.",
+        "당신과 함께한 순간들은 곧 나에게 오는 행운의 시작이었습니다. 진심으로 감사드립니다.",
+        "세상에 단 하나뿐인 당신께 감사를 드리며, 이 작은 말 한마디로도 내 마음을 전할 수 없다는 것을 알고 있습니다."
+    ]
+    res = random.choice(thankful_sentences)
+    return res
+
+def getOut():
+    res = f"누군가를 끌어낼 권한을 가진 사람은 오직 [방장]뿐입니다."
+    return res
+
+def getHentai():
+    res = f"변태새끼."
+    return res
+
+def getSuicide(sender):
+    
+    dead_list =["과로사","뇌졸중","복상사","심장마비","자기색정사",
+                "감전사","과다출혈","교통사고","동사","방사선피폭",
+                "의료사고","압사","질식사","추락사","실족사","폭사",
+                "폭행치사","자연재해","아사","고독사","뇌사","자살",
+                "타살","전사","즉사","객사","심장사","병사","자연사",
+                "익사","요절","교사","낙사","참수","추살","폭사","척살",
+                "급사","독사","괴사","수장"
+            ]
+    res = f"{sender}님께 어울리는 죽음은 [{random.choice(dead_list)}]입니다!\U0001F92A"
+    return res
