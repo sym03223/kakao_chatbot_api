@@ -29,9 +29,9 @@ def do_something():
     isGroupChat=request.args.get("isGroupChat")
     
     # 개발용... 주인이 아니면 다 넘김
-    if sender != "주인":
-        res = "none"
-        return res
+    # if sender != "주인":
+    #     res = "none"
+    #     return res
     
     # db 로깅
     new_chat = chats(room=room, sender=sender, msg=msg, isGroupChat=bool(isGroupChat))
@@ -47,7 +47,7 @@ def do_something():
             
         if msgSplit[0][0] == "!":
             
-            if msgSplit[0] in ["!명령어","!도움말","!help"]:
+            if msgSplit[0] in ["!안녕","!명령어","!도움말","!help"]:
                 res = f'''안녕하세요, {sender}님!\U0001F60D
 민초사랑 나라사랑 챗봇 민초봇입니다\U0001F603
 
@@ -209,6 +209,9 @@ NAME
             elif msgSplit[0] == "!채팅순위":
                 res = service.getChatRank(room,sender)
             elif msgSplit[0] == "!챗":
+                # if sender == "유련":
+                #     res = "당신의 질문. 차단되었다. 그만물어봐라"
+                #     return res
                 if len(msgSplit)!=1:
                     question = msg.replace(msgSplit[0],"").strip()
                     res = chatgpt.requestApi(question,sender)

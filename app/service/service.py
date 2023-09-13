@@ -373,7 +373,7 @@ def getChatRank(room,sender):
     from sqlalchemy import desc  
     results = (
         db.session.query(chats.sender, func.count().label('cnt'))
-        .filter(chats.room == "방구석 인력 사무소")
+        .filter(chats.room == room)
         .group_by(chats.sender)
         .order_by(desc('cnt'))
         .all()
@@ -436,6 +436,7 @@ def getStockData(stock_name,sender):
     url = "https://finance.naver.com/item/main.naver?code="+stock_code
     
     driver.get(url) 
+    time.sleep(1)
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
     today = soup.find('div', {'class':'rate_info'})
@@ -445,18 +446,27 @@ def getStockData(stock_name,sender):
     now = datetime.now()
     formatted_now = now.strftime("%Y년 %m월 %d일 %H시 %M분")
     
-    today_price = today.select("div p.no_today em.no_down > span ")
+    today_price = today.select("div p.no_today em > span ")
     today_price = ''.join([item.text for item in today_price])
     
-    no_exday = today.select("div p.no_exday > em.no_down")
-    no_exday_text1=(no_exday[0].text).replace("\n","")
-    no_exday_text2=(no_exday[1].text).replace("\n","")
+    no_exday = today.select("div p.no_exday > em")
+    
+    if len(no_exday)>0:    
+        no_exday_text1=(no_exday[0].text).replace("\n","")
+        no_exday_text2=(no_exday[1].text).replace("\n","")
+    else:
+        no_exday_text1="정보없음"
+        no_exday_text2="정보없음"
+    
     no_exday_info=""
+    
     
     if "상승" in no_exday_text1:
         no_exday_info = f"전일대비 {up_emoji}{no_exday_text1} | {no_exday_text2}"
     elif "하락" in no_exday_text1:
         no_exday_info = f"전일대비 {down_emoji}{no_exday_text1} | {no_exday_text2}"
+    else:
+        no_exday_info = f"전일대비 {no_exday_text1} | {no_exday_text2}"
     
     summary_info = soup.find('table', {'class':'no_info'})
     summary = summary_info.select("tbody tr td > em")
