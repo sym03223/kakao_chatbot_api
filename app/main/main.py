@@ -29,9 +29,9 @@ def do_something():
     isGroupChat=request.args.get("isGroupChat")
     
     # 개발용... 주인이 아니면 다 넘김
-    if sender != "주인":
-        res = "none"
-        return res
+    # if sender != "주인":
+    #     res = "none"
+    #     return res
     
     # db 로깅
     new_chat = chats(room=room, sender=sender, msg=msg, isGroupChat=bool(isGroupChat))
@@ -244,10 +244,10 @@ NAME
             elif msgSplit[0] == "!채팅순위":
                 res = service.getChatRank(room,sender)
             elif msgSplit[0] == "!챗":
-                if room == "방구석 인력 사무소":
-                    # res = "당신의 질문. 차단되었다. 그만물어봐라"
-                    res = "현재 수정중입니다. 해당 서비스를 이용하실 수 없습니다."
-                    return res
+                # if room == "방구석 인력 사무소":
+                #     res = "당신의 질문. 차단되었다. 그만물어봐라"
+                #     res = "현재 수정중입니다. 해당 서비스를 이용하실 수 없습니다."
+                #     return res
                 if len(msgSplit)!=1:
                     question = msg.replace(msgSplit[0],"").strip()
                     res = chatgpt.requestApi(question,sender)
