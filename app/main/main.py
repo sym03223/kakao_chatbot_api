@@ -239,7 +239,7 @@ NAME
                     res = service.getMapSearch(area.strip())       
                 else :
                     res = "지역을 입력해주세요. \n사용법 : !지도 [지역명]"
-            elif msgSplit[0] == "!메뉴추천":
+            elif msgSplit[0] in ["!메뉴추천","!메뉴","!점메추","!저메추"]:
                 res = service.getMenu(sender)
             elif msgSplit[0] == "!채팅순위":
                 res = service.getChatRank(room,sender)
@@ -263,7 +263,7 @@ NAME
                     res = service.getStockData(stock_name,sender)
                 else :
                     res = "종목명을 입력해주세요. \n사용법 : !주식 [종목명]"
-            elif msgSplit[0] == "!한강온도":
+            elif msgSplit[0] in ["!한강온도","!한강물온도"]:
                 res = service.getHanRiverTemp()
             elif msgSplit[0] == "!자살":
                 res = service.getSuicide(sender)
@@ -288,7 +288,7 @@ NAME
                 res = "반민초 척살단 모집(1/999,999,999,999)"    
             elif msgSplit[0] == "!멜론차트":
                 res = service.getMelonChart()
-            elif msgSplit[0] == "!영화":
+            elif msgSplit[0] in ["!영화","!현재상영작","!영화추천"]:
                 res = service.getMovieList()
             else:
                 res = "명령을 인식할 수 없습니다.\n!명령어로 명령어를 조회할 수 있습니다."

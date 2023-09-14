@@ -302,7 +302,7 @@ def youtubeSearch(keyword):
     
     res = f"""[\"{keyword.replace("+"," ")}\" 유튜브 검색 결과입니다.]"""
     res = res+"\n\n"
-    for i in range(0,5):
+    for i in range(0,3):
         res = res + str(i+1)+". "+ content_total_title[i] + "\n" + content_total_link[i]
         res = res + "\n\n"
     
