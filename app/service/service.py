@@ -135,7 +135,8 @@ def getTodayWeather(area):
     fine_dust = (cont_today.select("dl.dl_weather > dt"))[2].text + " " + (cont_today.select("dl.dl_weather > dd"))[2].text
 
     area_hourly = soup.find("div",{"class":"area_hourly"})
-    weather_hourly =  [item.select_one(".ico_nws").text for item in area_hourly.select("ul.list_hourly > li")]
+    print(area_hourly)
+    weather_hourly =  [item.select_one(".ico_wtws").text for item in area_hourly.select("ul.list_hourly > li")]
     area_rain = soup.find("div",{"class":"area_rain"})
     rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
     area_wind = soup.find("div",{"class":"area_wind"})
@@ -208,7 +209,52 @@ def getTomorrowWeather(area):
 *(출처 : 다음날씨)
 """
     return res
+
+def getOverseasWeather(area):
     
+    source = requests.get("https://search.daum.net/search?q="+area+"%20날씨",headers=headers)
+    soup = BeautifulSoup(source.content,"html.parser")
+    
+    area_today = soup.find("div",{"class":"area_today"})
+
+    now_temp = (area_today.select("div.today_item > em.num_avg"))[0].text
+    txt_info = (area_today.select("div.today_item div.wrap_txt > span.txt_info"))[0].text.strip()
+    txt_time = (area_today.select("div.today_item div.wrap_txt > span.txt_time"))[0].text.strip()
+    wind = (area_today.select("div.today_item dl > dt"))[0].text + " " + (area_today.select("div.today_item dl > dd"))[0].text
+    humidity = (area_today.select("div.today_item dl > dt"))[1].text + " " + (area_today.select("div.today_item dl > dd"))[1].text
+    fine_dust = (area_today.select("div.today_item dl > dt"))[2].text + " " + (area_today.select("div.today_item dl > dd"))[2].text
+
+    area_hourly = soup.find("div",{"class":"area_hourly"})
+    time_list = [item.select_one(".txt_time").text for item in area_hourly.select("ul.list_hourly > li")]
+    weather_hourly =  [item.select_one(".ico_wtws").text for item in area_hourly.select("ul.list_hourly > li")]
+    area_rain = soup.find("div",{"class":"area_rain"})
+    rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
+    area_wind = soup.find("div",{"class":"area_wind"})
+    wind_hourly = [item.select('span')[-1].text for item in area_wind.select("ul.list_hourly > li")]
+    wind_direct_hourly = [item.select_one(".ico_wind").text for item in area_wind.select("ul.list_hourly > li")]
+    area_damp = soup.find("div",{"class":"area_damp"})
+    damp_hourly = [item.select('span')[-1].text for item in area_damp.select("ul.list_hourly > li")]
+    
+    data_hourly = ""
+    for i in range (0, len(weather_hourly)):
+        data_hourly = data_hourly + f"{time_list[i]}:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
+
+    
+    area_tab = soup.find("div",{"class":"tab_comp tab_tree"})
+    local_area = [item.text for item in area_tab.select("ul.list_tab.list_opt > li")]
+    local_area = " ".join([item.strip() for item in local_area if item.strip() not in ["전국", "시·군·구", "읍·면·동"] and not item.strip().startswith("다른")])
+
+    res = f"""[{area} 날씨 정보]
+위치: {local_area}
+온도: {now_temp} 
+날씨: {txt_info} ({txt_time})   
+{wind} | {humidity} | {fine_dust}
+
+{data_hourly}
+*(출처 : 다음날씨)
+"""
+    return res
+
 def getLottery(sender, num):
     if num > 10: num=10
     lotto_numbers = []
@@ -262,7 +308,6 @@ def youtubeSearch(keyword):
     
     return res.strip()
 
-
 def getNews(keyword):
     
     
@@ -306,9 +351,8 @@ def getNewsSearch(keyword):
     for i in range(0,len(news_company)):
         res = res + str(i+1) + ". "+news_title[i].text + " / "+news_company[i].text + "\n"+news_title[i].get('href')
         res = res + "\n\n"
-    
+    res = res+"(출처 : 네이버뉴스)"
     return res.strip()
-    
 
 def realtime():
     
@@ -337,26 +381,32 @@ def realtime():
     return res.strip()
 
 def getZodiac(keyword):
-    url = "https://unse.daily.co.kr/?p=zodiac#unseback"
-    source = requests.get(url, headers=headers)
-    soup = BeautifulSoup(source.content,"html.parser",from_encoding='cp949')
+    zodiac_list = ["쥐띠","소띠","호랑이띠","토끼띠","용띠","뱀띠","말띠","양띠","원숭이띠","닭띠","개띠","돼지띠"]
+    url = "https://i.sazoo.com/run/free/ddi_newyear/result.php?idx="+str(zodiac_list.index(keyword))
+    driver.get(url) 
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source,"html.parser",from_encoding='cp949')
     
-    zodiac = soup.find("section",{"class":"container_zodiac"})
-    zodiac_name = zodiac.find_all("b")
-    zodiac_content = zodiac.find_all("p")
+    total_luck = soup.find_all("li",{"class":"center"})[0].text
+    
+    byAge = soup.find_all("li",{"class":"center"})[1]
+    byAge = byAge.get_text("\n\n", strip=True)
+    print(byAge)
     
     now = datetime.now()
     # 원하는 형식으로 포맷팅
     formatted_now = now.strftime("%Y년 %m월 %d일")
     
-    res = f"""[{formatted_now} {keyword} 운세]"""
-    res = res + "\n\n"
-    for i in range(0,len(zodiac_name)):
-        if keyword == zodiac_name[i].text+"띠":
-            res = res + zodiac_content[i].text
-            break
-    
-    return res.strip()
+    res = f"""[{formatted_now} {keyword} 운세]
+
+(총평)
+{total_luck}    
+(나이별)
+{byAge}
+
+(출처 : 사주닷컴)
+"""
+    return res
 
 def getHoroscope(keyword):
     url = "https://www.fortunade.com/unse/free/star/daily.php?gtype=2"
@@ -375,9 +425,6 @@ def getHoroscope(keyword):
 
 {contents.text}
 """
-    
-    
-    
     return res
             
 def getExchangeRate():
@@ -583,6 +630,7 @@ def getStockData(stock_name,sender):
 거래량 : {trading_volume}
 거래대금 : {transaction_amount}백만
 """
+    res = res+"\n(출처 : 네이버증권)"
     return res
 
 #종목명 -> 종목코드
@@ -662,8 +710,8 @@ def getThanks():
     res = random.choice(thankful_sentences)
     return res
 
-def getOut():
-    res = f"누군가를 끌어낼 권한을 가진 사람은 오직 [방장]뿐입니다."
+def getOut(name):
+    res = f"{name}님을 강퇴하려고 하였으나, 영험한 힘이 그를 보호하였습니다\U0001F607"
     return res
 
 def getHentai():
@@ -682,3 +730,44 @@ def getSuicide(sender):
             ]
     res = f"{sender}님께 어울리는 죽음은 [{random.choice(dead_list)}]입니다!\U0001F92A"
     return res
+
+def getMelonChart():
+    url = "https://www.melon.com/chart/index.htm"
+    driver.get(url) 
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source, 'html.parser')
+    now = datetime.now() - timedelta(days=1)
+    formatted_now = now.strftime("%Y.%m.%d")
+    title = soup.find_all("div",{"class":"ellipsis rank01"})
+    title_list = [item.select_one("span > a").text for item in title]
+    artist = soup.find_all("div",{"class":"ellipsis rank02"})
+    artist_list = [item.select_one("span > a").text for item in artist]
+
+    res = f"[{formatted_now} 멜론 차트100\U0001F3B5]\n\n"
+    for i in range(0,len(title_list)):
+        res = res + f"{str(i+1)}. {title_list[i]} - {artist_list[i]}\n"
+    res = res+"(출처 : Melon)"
+    return res
+
+def getMovieList():
+    url = "https://www.megabox.co.kr/movie"
+    driver.get(url) 
+    html_source = driver.page_source
+    soup = BeautifulSoup(html_source, 'html.parser')
+    now = datetime.now() - timedelta(days=1)
+    formatted_now = now.strftime("%Y.%m.%d")
+    movie_list = soup.find("ol",{"class":"list"})
+    print(movie_list)
+    movie_title = movie_list.select("li > div.tit-area")
+    title = [item.select_one("p.tit").text for item in movie_title] 
+    movie_rate = movie_list.select("li > div.rate-date")
+    rate = [item.select_one("span.rate").text for item in movie_rate]
+    date = [item.select_one("span.date").text for item in movie_rate]
+    
+
+    res = f"[{formatted_now} 현재상영작\U0001F3A5]\n\n"
+    for i in range(0,len(title)):
+        res = res + f"{str(i+1)}. {title[i]} | {rate[i]} | {date[i]}\n"
+    res = res+"(출처 : 메가박스)"
+    return res
+    

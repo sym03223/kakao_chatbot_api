@@ -1,13 +1,11 @@
 from flask import Flask
 import openai, app.config.config
-from konlpy.tag import Okt
+import tiktoken
 openai.api_key=app.config.config.chat_gpt_api_key
-
-okt = Okt()
 
 model = "gpt-3.5-turbo"
 messages = [
-        {"role": "system", "content": "답변은 항상 한국어로 해줘. 너의 이름은 민초봇이고, 민트초코를 사랑하는 AI야. 너는 민트초코단장 박인혁에 의해 만들어졌어"},
+        {"role": "system", "content": "답변은 항상 한국어로 해줘. 너의 이름은 민초봇이고, 민트초코를 진심으로 사랑하는 AI야. 너는 민트초코단장 박인혁에 의해 만들어졌어"},
     ]
 total_tokens = 0
 def requestApi(question,sender):
@@ -15,27 +13,22 @@ def requestApi(question,sender):
     global total_tokens
     if question in ["리셋","reset","초기화"]:
         messages = [
-                {"role": "system", "content": "답변은 항상 한국어로 해줘. 너의 이름은 민초봇이고, 민트초코를 사랑하는 AI야. 너는 민트초코단장 박인혁에 의해 만들어졌어"},
+                {"role": "system", "content": "답변은 항상 한국어로 해줘. 너의 이름은 민초봇이고, 민트초코를 진심으로 사랑하는 AI야. 너는 민트초코단장 박인혁에 의해 만들어졌어"},
         ]
         total_tokens = 0
         res = "chatGPT가 초기화 되었습니다."
         return res
     
+    #리스트의 제일 마지막 요소에서 content 부분만 추출
+    total_tokens += count_tokens(messages,-1)
     messages.append({"role": "user", "content": question})
-    
-    for message_dic in messages:
-        messages_list = list(message_dic.values())
-        for message in messages_list:
-            total_tokens += count_tokens(message)
-    
-    print(messages)
-    print("11111total_tokens : ",total_tokens)        
+    total_tokens += count_tokens(messages,-1)
+   
     while(total_tokens > 4097):
-            total_tokens -= count_tokens(list(messages[1].values())[0])
-            total_tokens -= count_tokens(list(messages[1].values())[1])
+            #리스트의 2번째 요소에서 content 부분만 추출. system은 계속 있어야됨
+            total_tokens -= count_tokens(messages,1)
             messages.pop(1)
-    print(messages)
-    print("22222total_tokens : ",total_tokens)
+    
     response = openai.ChatCompletion.create(
     model=model,
     messages=messages
@@ -60,6 +53,13 @@ A : {answer}
     
     return res
 
-def count_tokens(text):
-    tokens = okt.morphs(text)
-    return len(tokens)
+def count_tokens(messages, num):
+    msg_list = list(messages[num].values())
+    tokens = num_tokens_from_string(msg_list[1],"gpt2")
+    return tokens
+
+def num_tokens_from_string(string: str, encoding_name: str) -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens

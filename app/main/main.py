@@ -29,9 +29,9 @@ def do_something():
     isGroupChat=request.args.get("isGroupChat")
     
     # 개발용... 주인이 아니면 다 넘김
-    # if sender != "주인":
-    #     res = "none"
-    #     return res
+    if sender != "주인":
+        res = "none"
+        return res
     
     # db 로깅
     new_chat = chats(room=room, sender=sender, msg=msg, isGroupChat=bool(isGroupChat))
@@ -67,6 +67,8 @@ NAME
         !날씨 [지역명]
 >>  !예보
         !예보 [지역명]
+>>  !해외날씨
+        !해외날씨 [지역명]
 >>  !구글
         !구글 [검색어]
 >>  !나무
@@ -84,6 +86,8 @@ NAME
         !주식 [종목명]
 >>  !챗
         !챗 [질문] (ps. !챗 리셋|reset|초기화 시 리셋됨)
+>>  !멜론차트
+>>  !영화
 
 [재밋거리]
 
@@ -91,7 +95,7 @@ NAME
 >>  !운세
         띠별운세 - !운세 [띠]
         별자리운세 - !운세 [별자리]
->>  !로또
+>>  !로또 [숫자]
 >>  vs 
         [키워드] vs [키워드]
 >> !채팅순위
@@ -124,6 +128,19 @@ NAME
                     res = service.getTomorrowWeather(area.strip())       
                 else :
                     res = "지역을 입력해주세요. \n사용법 : !예보 [지역명]"
+                    
+            elif msgSplit[0] == "!해외날씨":
+                area = ""
+                if len(msgSplit) != 1:
+                    if len(msgSplit) >= 3:
+                        for i in range(1, len(msgSplit)):
+                            print(i)
+                            area = area + msgSplit[i]+" "
+                    else:
+                        area = msgSplit[1]    
+                    res = service.getOverseasWeather(area.strip())       
+                else :
+                    res = "지역을 입력해주세요. \n사용법 : !해외날씨 [지역명]"
                     
             elif msgSplit[0] == "!운세":
                 if len(msgSplit)!=1:
@@ -257,15 +274,22 @@ NAME
             elif msgSplit[0] == "!강퇴":
                 if len(msgSplit) != 1:
                     name = msg.replace(msgSplit[0],"").strip()
-                    name = name.replace(" ","") 
+                    name = name.replace(" ","")
                     res = service.getOut(name)
                 else :
-                    res = "종목명을 입력해주세요. \n사용법 : !주식 [종목명]"
-                res = service.getOut(name)
+                    res = "강퇴할 사람을 입력해주세요. \n사용법 : !강퇴 [닉네임]"
             elif msgSplit[0] == "!섹스":
                 res = service.getHentai()
             elif msgSplit[0] == "!어흥":
                 res = "어흥아흥"
+            elif msgSplit[0] in ["!민초","!민트초코"]:
+                res = "민초봇은 민초단에 충성을 다하며 민트초코를 열렬히 응원/지지/연대합니다."    
+            elif msgSplit[0] in ["!반민초"]:
+                res = "반민초 척살단 모집(1/999,999,999,999)"    
+            elif msgSplit[0] == "!멜론차트":
+                res = service.getMelonChart()
+            elif msgSplit[0] == "!영화":
+                res = service.getMovieList()
             else:
                 res = "명령을 인식할 수 없습니다.\n!명령어로 명령어를 조회할 수 있습니다."
             
