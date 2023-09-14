@@ -58,7 +58,8 @@ NAME
 
 [기본 명령어]
     !명령어, !도움말, !help : 커맨드 목록
-    
+
+*대괄호 [ ] 빼고 입력해주세요.    
 [정보 검색]
 
 >>  !뉴스
@@ -143,7 +144,16 @@ NAME
 !운세 [양|황소|쌍둥이|게|사자|처녀|천칭|전갈|사수|염소|물병|물고기]"
 """
             elif msgSplit[0] == "!로또":
-                res = service.getLottery(sender)
+                print(len(msgSplit))
+                if len(msgSplit)!=1:
+                    num = msg.replace(msgSplit[0],"").strip()
+                    if num.isdigit():
+                        res = service.getLottery(sender,int(num))
+                    else:
+                        res = "숫자를 입력해주세요.\n사용법: !로또 [세트 개수]"
+                else:
+                    print("dasd")
+                    res = service.getLottery(sender,1)
             elif msgSplit[0] == "!구글":
                 if len(msgSplit)!=1:
                     keyword = msg.replace(msgSplit[0],"").strip()
@@ -200,13 +210,7 @@ NAME
                 area = ""
                 if len(msgSplit) != 1:
                     area = msg.replace(msgSplit[0],"").strip()
-                    area = area.replace(" ","+")  
-                    # if len(msgSplit) >= 3:
-                    #     for i in range(1, len(msgSplit)):
-                    #         print(i)
-                    #         area = area + msgSplit[i]+" "
-                    # else:
-                    #     area = msgSplit[1]    
+                    area = area.replace(" ","+")     
                     res = service.getRestaurantByArea(area.strip())       
                 else :
                     res = "지역을 입력해주세요. \n사용법 : !맛집 [지역명]"
@@ -223,14 +227,16 @@ NAME
             elif msgSplit[0] == "!채팅순위":
                 res = service.getChatRank(room,sender)
             elif msgSplit[0] == "!챗":
-                # if sender == "유련":
-                #     res = "당신의 질문. 차단되었다. 그만물어봐라"
-                #     return res
+                if room == "방구석 인력 사무소":
+                    # res = "당신의 질문. 차단되었다. 그만물어봐라"
+                    res = "현재 수정중입니다. 해당 서비스를 이용하실 수 없습니다."
+                    return res
                 if len(msgSplit)!=1:
                     question = msg.replace(msgSplit[0],"").strip()
                     res = chatgpt.requestApi(question,sender)
                 else :
                     res = "챗 GPT에게 질문을 입력해주세요. \n사용법 : !챗 [질문]"
+                
             elif msgSplit[0] == "!테스트":
                 res = service.getRandomTest()
             elif msgSplit[0] == "!주식":
@@ -249,9 +255,17 @@ NAME
             elif msgSplit[0] in ["!죽을래?","!뒤질래?","!뒤지고싶냐?","!죽고싶냐?","!병신","!병신새끼","!씨발새끼","!시발놈","!씨발럼","!시발롬","!시발련아","!씨발련아","!시발련","!씨발련"]:
                 res = service.getSorry()
             elif msgSplit[0] == "!강퇴":
-                res = service.getOut()
+                if len(msgSplit) != 1:
+                    name = msg.replace(msgSplit[0],"").strip()
+                    name = name.replace(" ","") 
+                    res = service.getOut(name)
+                else :
+                    res = "종목명을 입력해주세요. \n사용법 : !주식 [종목명]"
+                res = service.getOut(name)
             elif msgSplit[0] == "!섹스":
                 res = service.getHentai()
+            elif msgSplit[0] == "!어흥":
+                res = "어흥아흥"
             else:
                 res = "명령을 인식할 수 없습니다.\n!명령어로 명령어를 조회할 수 있습니다."
             

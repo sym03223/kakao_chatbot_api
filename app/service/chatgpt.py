@@ -7,7 +7,7 @@ okt = Okt()
 
 model = "gpt-3.5-turbo"
 messages = [
-        {"role": "system", "content": "답변은 항상 한국어로 해줘."},
+        {"role": "system", "content": "답변은 항상 한국어로 해줘. 너의 이름은 민초봇이고, 민트초코를 사랑하는 AI야. 너는 민트초코단장 박인혁에 의해 만들어졌어"},
     ]
 total_tokens = 0
 def requestApi(question,sender):
@@ -15,8 +15,9 @@ def requestApi(question,sender):
     global total_tokens
     if question in ["리셋","reset","초기화"]:
         messages = [
-                {"role": "system", "content": "답변은 항상 한국어로 해줘."},
+                {"role": "system", "content": "답변은 항상 한국어로 해줘. 너의 이름은 민초봇이고, 민트초코를 사랑하는 AI야. 너는 민트초코단장 박인혁에 의해 만들어졌어"},
         ]
+        total_tokens = 0
         res = "chatGPT가 초기화 되었습니다."
         return res
     
@@ -26,13 +27,15 @@ def requestApi(question,sender):
         messages_list = list(message_dic.values())
         for message in messages_list:
             total_tokens += count_tokens(message)
-            
-            
+    
+    print(messages)
+    print("11111total_tokens : ",total_tokens)        
     while(total_tokens > 4097):
-            messages.pop(1)
             total_tokens -= count_tokens(list(messages[1].values())[0])
             total_tokens -= count_tokens(list(messages[1].values())[1])
-    
+            messages.pop(1)
+    print(messages)
+    print("22222total_tokens : ",total_tokens)
     response = openai.ChatCompletion.create(
     model=model,
     messages=messages

@@ -209,25 +209,16 @@ def getTomorrowWeather(area):
 """
     return res
     
+def getLottery(sender, num):
+    if num > 10: num=10
+    lotto_numbers = []
+    for i in range(0,num):
+        lotto_numbers.append(sorted(random.sample(range(1, 46), 6)))
+    print(lotto_numbers)
+    res = f'''{sender}님을 위한 로또 추천번호!\n\n'''
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-def getLottery(sender):
-    lotto_numbers = random.sample(range(1, 46), 6)
-    print(sorted(lotto_numbers))
-    
-    res = f'''"{sender}"님을 위한 로또 추천번호!
-
-번호 : {sorted(lotto_numbers)}
-'''
+    for index,item in enumerate(lotto_numbers):
+        res = res + f"번호 {str(index+1)}: {item}\n"
     
     return res
 
@@ -478,17 +469,18 @@ def getChatRank(room,sender):
         .order_by(desc('cnt'))
         .all()
     )
-    res = f"[{room}]채팅방의 채팅순위입니다.\n\n"
+    
     total_count = sum(result.cnt for result in results)
     max_count = max(result.cnt for result in results)
     min_count = min(result.cnt for result in results)
     level_range = max_count - min_count
-
+    
+    res = f"[{room}]채팅방의 채팅순위입니다.\n총 채팅 갯수 : {total_count}개\n\n"
     for index, result in enumerate(results):
         level = round(((result.cnt - min_count) / level_range) * 9) + 1
         res += f"{index+1}위 {result.sender} - 채팅 {result.cnt}개 ({result.cnt/total_count*100:.1f}% Lv.{level})\n\n"
     
-    return res
+    return res.strip()
 
 def getMenu(sender):
     random_menu = db.session.query(menues).order_by(func.rand()).first()
