@@ -135,8 +135,7 @@ def getTodayWeather(area):
     fine_dust = (cont_today.select("dl.dl_weather > dt"))[2].text + " " + (cont_today.select("dl.dl_weather > dd"))[2].text
 
     area_hourly = soup.find("div",{"class":"area_hourly"})
-    print(area_hourly)
-    weather_hourly =  [item.select_one(".ico_wtws").text for item in area_hourly.select("ul.list_hourly > li")]
+    weather_hourly =  [item.select('span')[-1].text for item in area_hourly.select("ul.list_hourly > li")]
     area_rain = soup.find("div",{"class":"area_rain"})
     rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
     area_wind = soup.find("div",{"class":"area_wind"})
@@ -175,11 +174,6 @@ def getTomorrowWeather(area):
     am_temp = (cont_tomorrow.select("div.info_tomorrow span.desc_temp > strong.txt_temp"))[0].text
     pm_weather = (cont_tomorrow.select("div.info_tomorrow span.tit_ampm > span.txt_weather"))[1].text
     pm_temp = (cont_tomorrow.select("div.info_tomorrow span.desc_temp > strong.txt_temp"))[1].text
-    
-    print(am_weather)
-    print(am_temp)
-    print(pm_weather)
-    print(pm_temp)
     
     area_hourly = soup.find("div",{"class":"area_hourly"})
     weather_hourly =  [item.select_one(".ico_nws").text for item in area_hourly.select("ul.list_hourly > li")]
@@ -412,7 +406,7 @@ def getHoroscope(keyword):
     url = "https://www.fortunade.com/unse/free/star/daily.php?gtype=2"
     source = requests.get(url, headers=headers)
     soup = BeautifulSoup(source.content,"html.parser",from_encoding='cp949')
-    horoscope_commands = ["양","황소","쌍둥이","게","사자","처녀","천칭","전갈","사수","염소","물병","물고기"]
+    horoscope_commands = ["양자리","황소자리","쌍둥이자리","게자리","사자자리","처녀자리","천칭자리","전갈자리","사수자리","염소자리","물병자리","물고기자리"]
     scope = horoscope_commands.index(keyword) if keyword in horoscope_commands else None
     
     element = soup.find(id=f"result_{int(scope+1)}")
@@ -421,7 +415,7 @@ def getHoroscope(keyword):
     # 원하는 형식으로 포맷팅
     formatted_now = now.strftime("%Y년 %m월 %d일")
     
-    res = f"""[{formatted_now} {keyword}자리 운세]
+    res = f"""[{formatted_now} {keyword} 운세]
 
 {contents.text}
 """
@@ -736,7 +730,7 @@ def getMelonChart():
     driver.get(url) 
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
-    now = datetime.now() - timedelta(days=1)
+    now = datetime.now()
     formatted_now = now.strftime("%Y.%m.%d")
     title = soup.find_all("div",{"class":"ellipsis rank01"})
     title_list = [item.select_one("span > a").text for item in title]
@@ -754,7 +748,7 @@ def getMovieList():
     driver.get(url) 
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
-    now = datetime.now() - timedelta(days=1)
+    now = datetime.now()
     formatted_now = now.strftime("%Y.%m.%d")
     movie_list = soup.find("ol",{"class":"list"})
     print(movie_list)

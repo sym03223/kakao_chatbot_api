@@ -18,7 +18,7 @@ log_handler.setFormatter(logging.Formatter(
 app.logger.addHandler(log_handler)
 
 zodiac_commands = ["쥐띠","소띠","호랑이띠","토끼띠","용띠","뱀띠","말띠","양띠","원숭이띠","닭띠","개띠","돼지띠"]
-horoscope_commands = ["양","황소","쌍둥이","게","사자","처녀","천칭","전갈","사수","염소","물병","물고기"]
+horoscope_commands = ["양자리","황소자리","쌍둥이자리","게자리","사자자리","처녀자리","천칭자리","전갈자리","사수자리","염소자리","물병자리","물고기자리"]
 
 @app.route("/dosomething", methods=['GET'])
 def do_something():
@@ -158,7 +158,7 @@ NAME
 사용법 : 
 !운세 [쥐띠|소띠|호랑이띠|토끼띠|용띠|뱀띠|말띠|양띠|원숭이띠|닭띠|개띠|돼지띠]
 
-!운세 [양|황소|쌍둥이|게|사자|처녀|천칭|전갈|사수|염소|물병|물고기]"
+!운세 [양자리|황소자리|쌍둥이자리|게자리|사자자리|처녀자리|천칭자리|전갈자리|사수자리|염소자리|물병자리|물고기자리]"
 """
             elif msgSplit[0] == "!로또":
                 print(len(msgSplit))
@@ -286,7 +286,7 @@ NAME
                 res = "민초봇은 민초단에 충성을 다하며 민트초코를 열렬히 응원/지지/연대합니다."    
             elif msgSplit[0] in ["!반민초"]:
                 res = "반민초 척살단 모집(1/999,999,999,999)"    
-            elif msgSplit[0] == "!멜론차트":
+            elif msgSplit[0] in ["!멜론차트","!멜론"]:
                 res = service.getMelonChart()
             elif msgSplit[0] in ["!영화","!현재상영작","!영화추천"]:
                 res = service.getMovieList()
