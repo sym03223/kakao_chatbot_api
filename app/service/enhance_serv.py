@@ -7,6 +7,7 @@ from app.model.enhancement_game import enhancement_game
 from app.model.enhancement_guiness import enhancement_guiness
 from app.model.enhancement_history import enhancement_history
 from app import db, app
+import app.config.config as conf
 
 def create_item(sender,room,item_name):
     
@@ -38,7 +39,7 @@ def create_item(sender,room,item_name):
             current_time = datetime.now()
             time_difference = current_time - user_items[0].update_date
             time_difference_seconds = time_difference.total_seconds()
-            if time_difference_seconds < 60:
+            if time_difference_seconds < conf.enhance_limit_second:
                 res = f"다음 아이템 강화까지 남은 시간 : {int(60-time_difference_seconds)}초"
                 return res
         
@@ -69,12 +70,13 @@ def create_item(sender,room,item_name):
             print(user_items[0].update_date)
             time_difference = current_time - user_items[0].update_date
             time_difference_seconds = time_difference.total_seconds()
-            if time_difference_seconds < 60:
-                res = f"다음 아이템 강화까지 남은 시간 : {int(60-time_difference_seconds)}초"
+            if time_difference_seconds < conf.enhance_limit_second:
+                res = f"다음 아이템 강화까지 남은 시간 : {int(conf.enhance_limit_second-time_difference_seconds)}초"
                 return res    
         item = existed_item[0]
         #기존 아이템 수정
         result = calc_level(item.item_level)
+        before_level = item.item_level
         after_level = result.get('after_level')
         plus_level = result.get('plus_level')
         #결과
@@ -110,7 +112,7 @@ def create_item(sender,room,item_name):
         new_history = enhancement_history(user=sender, 
                                         item_name=item_name,
                                         room=room,
-                                        before_level=item.item_level,
+                                        before_level=before_level,
                                         change_level=plus_level,
                                         current_level=after_level
                                         )
@@ -180,7 +182,8 @@ def get_my_item(sender,room):
     return res.strip()
 
 def get_manual():
-    res ="""[강화 게임 커맨드]
+    res ="""[강화 게임(베타)]
+*해당 게임은 베타버전이며 정식오픈하면 이전 데이터는 전부 삭제됩니다.
     
 !강화 (아이템 명)
  - 자신이 원하는 이름의 아이템을 강화할 수 있다. 
@@ -188,7 +191,6 @@ def get_manual():
  - 확률은 레벨에 비례하지 절대로 수치가 아니며, 확률이 음수(-)로 표기될 수 있다. 
  - 강화는 1분마다 한 번 강화할 수 있다
  - 아이템은 인당 최고 5개까지 보유 가능하다
- - 매주 월요일마다 최고 레벨과 평균을 기네스에 기록하고 전체 강화 데이터를 초기화한다.
  
 !강화 보유 (아이템명)
  - 내가 강화 중인 아이템 목록을 보여준다.
