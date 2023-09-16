@@ -1,21 +1,11 @@
 import bs4, requests, random
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import random
-import pandas as pd
-import numpy as np
 import time
 from app import db
 from sqlalchemy.sql import func
-from app.model.menues import menues
-from app.model.chats import chats
 import re
 from pykrx import stock
 
@@ -31,96 +21,6 @@ driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedri
 # 속도 향상을 위한 옵션 해제
 
 
-
-def getWeatherData(area):
-    
-    # 스크래핑 할 URL 세팅
-    URL = "https://m.search.naver.com/search.naver?&query=" + area + "%20날씨"
-    # 크롬 드라이버를 통해 지정한 URL의 웹 페이지 오픈
-    driver.get(URL)
-    # 페이지 소스 추출
-    html_source = driver.page_source
-    soup = BeautifulSoup(html_source, 'html.parser')
-    
-    check = soup.find_all("li",{"class":"sub_tab item"})
-    
-
-    if check[0].get("aria-selected")=="true":
-        
-        #현재기온
-        now_temp = (soup.find("div",{"class":"temperature_text"})).strong.text[5:]
-        #최고기온
-        up_temp = (soup.find("span",{"class":"highest"})).text[4:]
-        #최저기온
-        down_temp = (soup.find("span",{"class":"lowest"})).text[4:]
-        
-        #요약
-        summary = (soup.find("p",{"class":"summary"})).text.replace("  "," / ")
-        
-        summary_list = soup.find("dl",{"class":"summary_list"})
-        #체감온도
-        feel_temp = (summary_list.select("div.sort > dd"))[0].text
-        #습도
-        humidity = (summary_list.select("div.sort > dd"))[1].text
-        #풍향
-        wind_direction=(summary_list.select("div.sort > dt"))[2].text + " " +(summary_list.select("div.sort > dd"))[2].text
-        
-        chart = (soup.find("ul",{"class":"today_chart_list"})).text.strip()
-        chart = chart.replace("     ","\n")
-    
-        res = f'''[{area} 날씨]
-    
-현재기온 : {now_temp}
-최고 : {up_temp} | 최저 : {down_temp} | 체감 : {feel_temp}
-습도 : {humidity} | 풍향 : {wind_direction}
-
-{summary}
-
-{chart}
-'''
-    else:
-        if check[1].get("aria-selected")=="true":
-            tomorrow_data = soup.find("ul",{"class":"weather_info_list _tomorrow"})
-        elif check[2].get("aria-selected")=="true":
-            tomorrow_data = soup.find("ul",{"class":"weather_info_list _after_tomorrow"})
-            
-        #오전
-        am_temp = (tomorrow_data.select("div._am div div > strong")[0]).text[5:]
-        am_info = (tomorrow_data.select("div._am div.temperature_info > p")[0]).text
-        am_summary = (tomorrow_data.select("div._am div.temperature_info > dl")[0]).text.strip()
-        print(am_temp)
-        print(am_info)
-        print(am_summary)
-        
-        #오후
-        pm_temp = (tomorrow_data.select("div._pm div div > strong")[0]).text[5:]
-        pm_info = (tomorrow_data.select("div._pm div.temperature_info > p")[0]).text
-        pm_summary = (tomorrow_data.select("div._pm div.temperature_info > dl")[0]).text.strip()
-        print(pm_temp)
-        print(pm_info)
-        print(pm_summary)
-        
-        
-        dust = tomorrow_data.select("li > a")
-        print(dust)
-        print(dust[0].text)
-        print(dust[1].text)
-        print(dust[2].text)
-        print(dust[3].text)
-        print("dududududu")
-        res = f'''[{area} 날씨]
-<오전>    
-날씨 : {am_info}
-예측기온 : {am_temp} | {am_summary}
-{dust[0].text} | {dust[1].text}
-
-<오후>
-날씨 : {pm_info}
-예측기온 : {pm_temp} | {pm_summary}
-{dust[2].text} | {dust[3].text}
-'''
-    return res
-
 def getTodayWeather(area):
     
     source = requests.get("https://search.daum.net/search?q="+area+"%20날씨",headers=headers)
@@ -135,6 +35,7 @@ def getTodayWeather(area):
     fine_dust = (cont_today.select("dl.dl_weather > dt"))[2].text + " " + (cont_today.select("dl.dl_weather > dd"))[2].text
 
     area_hourly = soup.find("div",{"class":"area_hourly"})
+    time_list = [item.select_one(".txt_time").text for item in area_hourly.select("ul.list_hourly > li")]
     weather_hourly =  [item.select('span')[-1].text for item in area_hourly.select("ul.list_hourly > li")]
     area_rain = soup.find("div",{"class":"area_rain"})
     rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
@@ -146,7 +47,7 @@ def getTodayWeather(area):
     
     data_hourly = ""
     for i in range (0, len(weather_hourly)):
-        data_hourly = data_hourly + f"{str(i)}시:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
+        data_hourly = data_hourly + f"{time_list[i]}:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
 
     
     area_tab = soup.find("div",{"class":"tab_region"})
@@ -176,6 +77,7 @@ def getTomorrowWeather(area):
     pm_temp = (cont_tomorrow.select("div.info_tomorrow span.desc_temp > strong.txt_temp"))[1].text
     
     area_hourly = soup.find("div",{"class":"area_hourly"})
+    time_list = [item.select_one(".txt_time").text for item in area_hourly.select("ul.list_hourly > li")]
     weather_hourly =  [item.select_one(".ico_nws").text for item in area_hourly.select("ul.list_hourly > li")]
     area_rain = soup.find("div",{"class":"area_rain"})
     rain_hourly = [item.select_one(".txt_emph").text.strip() for item in area_rain.select("ul.list_hourly > li")]
@@ -187,7 +89,7 @@ def getTomorrowWeather(area):
     
     data_hourly = ""
     for i in range (0, len(weather_hourly)):
-        data_hourly = data_hourly + f"{str(i)}시:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
+        data_hourly = data_hourly + f"{time_list[i]}:{weather_hourly[i]} / 강수확률({rain_hourly[i]}) / 습도({damp_hourly[i]}) / {wind_direct_hourly[i]}({wind_hourly[i]})\n"
 
     
     area_tab = soup.find("div",{"class":"tab_region"})
@@ -318,7 +220,7 @@ def getNews(keyword):
     
     now = datetime.now()
     # 원하는 형식으로 포맷팅
-    formatted_now = now.strftime("%Y년 %m월 %d일 %H시 %M분")
+    formatted_now = now.strftime("%Y.%m.%d %H:%M")
     
     res = f"""[{subject} 분야 Top 10]
 검색일시 : {formatted_now}
@@ -361,7 +263,7 @@ def realtime():
     rank_text = rank.find_all("span","rank-text")
     now = datetime.now()
     # 원하는 형식으로 포맷팅
-    formatted_now = now.strftime("%Y년 %m월 %d일 %H시 %M분")
+    formatted_now = now.strftime("%Y.%m.%d %H:%M")
     
     res=f"""[실시간 검색어 TOP 10]
 검색일시 : {formatted_now}
@@ -376,30 +278,35 @@ def realtime():
 
 def getZodiac(keyword):
     zodiac_list = ["쥐띠","소띠","호랑이띠","토끼띠","용띠","뱀띠","말띠","양띠","원숭이띠","닭띠","개띠","돼지띠"]
-    url = "https://i.sazoo.com/run/free/ddi_newyear/result.php?idx="+str(zodiac_list.index(keyword))
+    url = "https://unse.daily.co.kr/?p=zodiac#unseback"
     driver.get(url) 
     html_source = driver.page_source
     soup = BeautifulSoup(html_source,"html.parser",from_encoding='cp949')
     
-    total_luck = soup.find_all("li",{"class":"center"})[0].text
+    total_luck = soup.find(id="code_"+str(zodiac_list.index(keyword)+1))
+    total = total_luck.select("li.start_li div.txt_box > p")[0].text
+    li_tags = total_luck.find_all('li')[1:]
     
-    byAge = soup.find_all("li",{"class":"center"})[1]
-    byAge = byAge.get_text("\n\n", strip=True)
-    print(byAge)
-    
+    tit = [item.find('span').text for item in li_tags]
+    txt = [item.find('p').text for item in li_tags]
+    print(tit)
+    print(txt)    
+
     now = datetime.now()
     # 원하는 형식으로 포맷팅
-    formatted_now = now.strftime("%Y년 %m월 %d일")
+    formatted_now = now.strftime("%Y.%m.%d")
     
     res = f"""[{formatted_now} {keyword} 운세]
-
+    
 (총평)
-{total_luck}    
-(나이별)
-{byAge}
+{total}
 
-(출처 : 사주닷컴)
+(나이별)
 """
+    for i in range(0,len(tit)):
+        res = res + f"19{tit[i].strip()} : {txt[i].strip()}\n"
+    
+    res = res+"\n(출처 : 데일리운세)"
     return res
 
 def getHoroscope(keyword):
@@ -413,7 +320,7 @@ def getHoroscope(keyword):
     contents = element.select("div.today_item > div.desc")[0]
     now = datetime.now()
     # 원하는 형식으로 포맷팅
-    formatted_now = now.strftime("%Y년 %m월 %d일")
+    formatted_now = now.strftime("%Y.%m.%d")
     
     res = f"""[{formatted_now} {keyword} 운세]
 
@@ -456,7 +363,7 @@ def getAllCoins():
     price = soup.find_all("td","datatable_cell__LJp3C datatable_cell--align-end__qgxDQ text-secondary !text-sm crypto-coins-table_thirdMobileCell__f8EsE")
     now = datetime.now()
     # 원하는 형식으로 포맷팅
-    formatted_now = now.strftime("%m월 %d일 %H시 %M분")
+    formatted_now = now.strftime("%Y.%m.%d %H:%M:%S")
     res = f"""[{formatted_now} \U000020BF 시세]"""
     res = res + "\n\n"
     
@@ -498,11 +405,15 @@ def getVs(msgSplit,sender):
     return res
 
 def getMapSearch(area):
-    link = "https://map.naver.com/p/search/"+area
-    return link
+    url = "https://map.naver.com/p/search/"+area
+    driver.get(url) 
+    time.sleep(1)
+    variable = driver.current_url
+    return variable
 
-def getChatRank(room,sender):
+def getChatRank(room):
     from sqlalchemy import desc  
+    from app.model.chats import chats
     results = (
         db.session.query(chats.sender, func.count().label('cnt'))
         .filter(chats.room == room)
@@ -524,6 +435,7 @@ def getChatRank(room,sender):
     return res.strip()
 
 def getMenu(sender):
+    from app.model.menues import menues
     random_menu = db.session.query(menues).order_by(func.rand()).first()
     res=f"""\U00002728{sender}님\U00002728을 위한 추천메뉴!
 [{random_menu.menu}] 어떠신가요?\U0001F61D
@@ -577,7 +489,7 @@ def getStockData(stock_name,sender):
     down_emoji = "\U0001F4C9"
     up_emoji = "\U0001F4C8"
     now = datetime.now()
-    formatted_now = now.strftime("%Y년 %m월 %d일 %H시 %M분")
+    formatted_now = now.strftime("%Y.%m.%d %H:%M")
     
     today_price = today.select("div p.no_today em > span ")
     today_price = ''.join([item.text for item in today_price])
@@ -660,49 +572,14 @@ def getHanRiverTemp():
     return res
     
 def getSorry():
-    apology_sentences = [
-        "진심으로 사과드립니다. 실수를 반성하고 더 나은 방향으로 나아가겠습니다.",
-        "말로는 다 할 수 없는 미안한 마음을 사과로 전합니다.",
-        "지나간 일에 대해 깊이 뉘우치며 진심으로 사죄의 말씀을 드립니다.",
-        "당신께 정중히 고개 숙여서 사과의 말씀을 전하고자 합니다.",
-        "속 깊은 곳에서 나오는 진심 어린 사과의 말씀입니다.",
-        "저의 부주의로 인해 상처를 드렸음에 대해 깊이 반성하며 송구스럽게도 사과드립니다.",
-        "사람은 실수할 수밖에 없지만, 그 실수를 인정하고 책임질 줄 아는 자세로 정중한 사과를 드리겠습니다.",
-        "마음이 아프시겠지만, 제 진심 어린 송구와 함께 겸허한 사과의 말씀을 전합니다.",
-        "당신께 헌신하는 마음에서 비롯된 작은 실수에 대하여 진심으로 송구하며 참회하는 말씀입니다.",
-        "상대방을 배려하지 못한 행동에 대하여 스스로 반성하고 죄송함을 표현하기 위해 이 자리를 빌리게 되었습니다.",
-        "내 잘못인 걸 알면서도 당신께 참회와 변명 없는 진심어린 사과의 말씀을 전합니다.",
-        "불미스러운 일로 인해 상처입힌 것에 대하여 깊이 후회하며 당당한 자세로 고개 숙여서 송구드립니다.",
-        "상대방께 예상치 못한 아픔을 안겨드려 대단히 죄송합니다",
-        "제가 저지른 잘못에 기인한 모든 상황들이 해결될 수 있길 바라며 마음속에서 영원한 용서와 감사함을 담아낼 때까지 기다리겠습니다",
-        "제가 지난 시간 동안 보여준 모습들 때문에 주변분들께 힘이 될 수 있는 가치있는 시간들 보내기 위해서 최선을 다할 것임을 약속드리며 마음속으로도 다시 한 번 죄송합니다.",
-        "나태와 부주의함으로 당신을 이런 지친 모습으로 만든 것 같아 너무나 미안합니다."
-    ]
-    res = random.choice(apology_sentences)
-    return res
+    from app.model.sentences import sentences
+    random_sen = db.session.query(sentences.sentence).filter(sentences.sep == "sorry").order_by(func.rand()).first()
+    return random_sen.sentence
     
 def getThanks():
-    thankful_sentences = [
-        "진심으로 감사드립니다. 정말로 도움이 되었습니다.",
-        "너무나 고맙다는 말로 표현할 수 없을 만큼 감사합니다.",
-        "정말로 감사합니다! 너무 큰 도움이 되었습니다.",
-        "고맙다는 말로 다 표현할 수 없을 정도로 감사드립니다.",
-        "너무나 소중한 도움에 진심으로 감사의 말씀을 전합니다.",
-        "정말 고맙습니다! 이렇게 큰 도움을 주셔서 정말 감사합니다.",
-        "강력하게 고맙다는 말씀을 전하고 싶습니다!",
-        "진심으로 감사드리며, 저에게 주신 선물에 대해 깊은 사례를 드립니다.",
-        "소중한 시간과 노력에 대해 깊은 존경과 감사의 마음을 전합니다.",
-        "정말 감사합니다! 이런 큰 호의를 받아서 영원히 잊지 않겠습니다.",
-        "너무나 소중한 선물에 대해 진심으로 고개 숙여서 감사의 인사를 드립니다.",
-        "비록 제가 할수잇는 일들보단 한참 못하지만 제가 할수 있는 최대한의 만큼 보답 하겠습니다",
-        "당신의 도움으로 마음이 따뜻해지고, 감사의 빛이 내 삶을 비추어 줍니다.",
-        "감사는 마음을 풍요롭게 만들어주는 신비한 힘이며, 그 힘은 당신에게서 얻어갑니다.",
-        "나에게 미소를 선물해준 당신께 깊은 감사를 드리며, 그 미소가 영원토록 가득하길 바랍니다.",
-        "당신과 함께한 순간들은 곧 나에게 오는 행운의 시작이었습니다. 진심으로 감사드립니다.",
-        "세상에 단 하나뿐인 당신께 감사를 드리며, 이 작은 말 한마디로도 내 마음을 전할 수 없다는 것을 알고 있습니다."
-    ]
-    res = random.choice(thankful_sentences)
-    return res
+    from app.model.sentences import sentences
+    random_sen = db.session.query(sentences.sentence).filter(sentences.sep == "thank").order_by(func.rand()).first()
+    return random_sen.sentence
 
 def getOut(name):
     res = f"{name}님을 강퇴하려고 하였으나, 영험한 힘이 그를 보호하였습니다\U0001F607"

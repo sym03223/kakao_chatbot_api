@@ -1,4 +1,3 @@
-from flask import Flask
 import openai, app.config.config
 import tiktoken
 openai.api_key=app.config.config.chat_gpt_api_key

@@ -1,9 +1,11 @@
-from flask import Flask, request
+from flask import request
 from app.service import service, chatgpt
+from app.service import enhance_serv
 import logging
 from logging.handlers import RotatingFileHandler
 from app import app, db
 import traceback
+import app.config.config as config
 from app.model.chats import chats
 
 
@@ -242,7 +244,7 @@ NAME
             elif msgSplit[0] in ["!메뉴추천","!메뉴","!점메추","!저메추"]:
                 res = service.getMenu(sender)
             elif msgSplit[0] == "!채팅순위":
-                res = service.getChatRank(room,sender)
+                res = service.getChatRank(room)
             elif msgSplit[0] == "!챗":
                 # if room == "방구석 인력 사무소":
                 #     res = "당신의 질문. 차단되었다. 그만물어봐라"
@@ -269,7 +271,7 @@ NAME
                 res = service.getSuicide(sender)
             elif msgSplit[0] in ["!고마워","!감사해","!넌최고야","!사랑해","!재밌어"]:
                 res = service.getThanks()
-            elif msgSplit[0] in ["!죽을래?","!뒤질래?","!뒤지고싶냐?","!죽고싶냐?","!병신","!병신새끼","!씨발새끼","!시발놈","!씨발럼","!시발롬","!시발련아","!씨발련아","!시발련","!씨발련"]:
+            elif msgSplit[0] in config.f_words:
                 res = service.getSorry()
             elif msgSplit[0] == "!강퇴":
                 if len(msgSplit) != 1:
@@ -304,3 +306,64 @@ NAME
         app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
         app.logger.info(f'response = {res}')    
     return (res)
+
+
+@app.route("/enhancement", methods=['GET'])
+def enhancement():
+    msg=request.args.get("msg")
+    sender=request.args.get("sender")
+    room=request.args.get("room")
+    isGroupChat=request.args.get("isGroupChat")
+    
+    new_chat = chats(room=room, sender=sender, msg=msg, isGroupChat=bool(isGroupChat))
+    db.session.add(new_chat)
+    db.session.commit()
+    res = "none"
+    
+    msgSplit = msg.split()
+    try:
+        if len(msgSplit)==1:
+            res = enhance_serv.get_manual()     
+        elif msgSplit[1] == "기네스":
+            if len(msgSplit)<3:
+                res = "강화 기네스"
+            elif msgSplit[2]=="평균":
+                res = "강화 평균"
+            elif msgSplit[2]=="서버":
+                res = "서버 강화 평균"
+        elif msgSplit[1] == "순위":
+            if len(msgSplit)<3:
+                res = enhance_serv.get_room_rank(room)
+            elif msgSplit[2]=="서버":
+                res = "강화 순위 서버"
+            elif msgSplit[2]=="전체":
+                res = "강화 순위 전체"
+            elif msgSplit[2]=="현재":
+                res = "강화 순위 현재"
+        elif msgSplit[1] == "삭제":
+            if len(msgSplit)<3:
+                res = "삭제할 아이템명을 입력해주세요."
+            else:
+                item_name = msg.replace(msgSplit[0],"").replace(msgSplit[1],"").strip()
+                res = enhance_serv.delete_my_item(sender,room,item_name)
+        elif msgSplit[1] == "보유":
+            res = enhance_serv.get_my_item(sender,room)
+        elif msgSplit[1] == "내기록":
+            res = "여기 니기록"
+        else:
+            item_name = msg.replace(msgSplit[0],"").strip()
+            print("item_name : ",item_name)
+            res = enhance_serv.create_item(sender,room,item_name)
+            print("res111 : "+res)
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        app.logger.error(f'response = {e}')
+        res = "오류가 발생하였습니다."
+        
+    if res != 'none':
+        #로그 생성
+        app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
+        app.logger.info(f'response = {res}')    
+    print("res222 : "+res)
+    return(res)
