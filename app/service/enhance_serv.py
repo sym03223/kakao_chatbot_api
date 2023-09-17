@@ -367,8 +367,8 @@ def get_my_record(sender, room):
 실패횟수 : {fail_count}
 파괴횟수 : {destroy_count}
 
-총 레벨 업 : {total_level_up}
-총 레벨 다운 : {total_level_down}
+총 레벨 업 : {total_level_up or 0}
+총 레벨 다운 : {total_level_down or 0}
 """
     
     return res
