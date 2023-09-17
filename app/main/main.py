@@ -103,6 +103,10 @@ NAME
 >> !채팅순위
 >> !테스트
 >> !한강온도
+
+[게임]
+
+>> !강화
 '''
 
             elif msgSplit[0] == "!날씨":
@@ -282,7 +286,9 @@ NAME
                     res = "강퇴할 사람을 입력해주세요. \n사용법 : !강퇴 [닉네임]"
             elif msgSplit[0] == "!섹스":
                 res = service.getHentai()
-            elif msgSplit[0] == "!어흥":
+            elif msgSplit[0] == "!넌뭐야":
+                res = "저는 민초봇이에오"
+            elif msgSplit[0] in ["!어흥","!어흥!","!어흥~","!어흥어흥","!어흥어흥~","!어흥어흥!"]:
                 res = "어흥아흥"
             elif msgSplit[0] in ["!민초","!민트초코"]:
                 res = "민초봇은 민초단에 충성을 다하며 민트초코를 열렬히 응원/지지/연대합니다."    
@@ -326,7 +332,7 @@ def enhancement():
             res = enhance_serv.get_manual()     
         elif msgSplit[1] == "기네스":
             if len(msgSplit)<3:
-                res = "강화 기네스"
+                res = enhance_serv.get_guiness(room)
             elif msgSplit[2]=="평균":
                 res = "강화 평균"
             elif msgSplit[2]=="서버":
@@ -349,7 +355,7 @@ def enhancement():
         elif msgSplit[1] == "보유":
             res = enhance_serv.get_my_item(sender,room)
         elif msgSplit[1] == "내기록":
-            res = "여기 니기록"
+            res = enhance_serv.get_my_record(sender,room)
         else:
             item_name = msg.replace(msgSplit[0],"").strip()
             print("item_name : ",item_name)

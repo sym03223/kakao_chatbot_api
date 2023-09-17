@@ -1,7 +1,8 @@
 import random
 from datetime import datetime, timedelta
 from sqlalchemy import desc, asc
-# from sqlalchemy.sql import func
+from sqlalchemy import text
+from sqlalchemy.sql import func
 from sqlalchemy import and_, or_
 from app.model.enhancement_game import enhancement_game
 from app.model.enhancement_guiness import enhancement_guiness
@@ -40,7 +41,7 @@ def create_item(sender,room,item_name):
             time_difference = current_time - user_items[0].update_date
             time_difference_seconds = time_difference.total_seconds()
             if time_difference_seconds < conf.enhance_limit_second:
-                res = f"다음 아이템 강화까지 남은 시간 : {int(60-time_difference_seconds)}초"
+                res = f"다음 아이템 강화까지 남은 시간 : {int(conf.enhance_limit_second-time_difference_seconds)}초"
                 return res
         
         result = calc_level(0)
@@ -52,7 +53,7 @@ def create_item(sender,room,item_name):
         res = f"""--------\U0001F389SUCCESS\U0001F389--------
 {round((result.get('success_chances'))*100,2)}%의 확률로 강화에 성공하였습니다!!
 [{item_name}] Lv.0 \U000027A1 Lv.{after_level} (+{plus_level})
---------SUCCESS--------
+--------\U0001F389SUCCESS\U0001F389--------
 """     
         #히스토리 저장
         new_history = enhancement_history(user=sender, 
@@ -84,6 +85,7 @@ def create_item(sender,room,item_name):
             res = f"""--------\U0001F4A3DESTROY\U0001F4A3--------
 {round(result.get('destroy_chances')*100,2)}%의 확률로 아이템이 파괴~\U0001F631
 [{item.item_name}]이 가루가 되었습니다~!!
+[{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.0 (-{item.item_level})
 --------\U0001F4A3DESTROY\U0001F4A3--------
 """         
             #아이템삭제
@@ -147,19 +149,25 @@ def calc_level(current_level):
     
     rand = random.random()
     plus_level = random.randint(1,9)
-    #성공
-    if rand < success_chances:
+    #대성공
+    if rand <= 0.001:
+        plus_level = random.randint(10,50)
         current_level += plus_level
-    #실패
+        success_chances = 0.001
     else:
-        #파괴
-        if rand < success_chances + destroy_chances:
-            plus_level=-current_level
-            current_level = 0  
-        #레벨다운
+        #성공
+        if rand < success_chances:
+            current_level += plus_level
+        #실패
         else:
-            current_level -= plus_level             
-            plus_level=-plus_level
+            #파괴
+            if rand < success_chances + destroy_chances:
+                plus_level=-current_level
+                current_level = 0  
+            #레벨다운
+            else:
+                current_level -= plus_level             
+                plus_level=-plus_level
     
     result['success_chances'] = success_chances
     result['destroy_chances'] = destroy_chances
@@ -172,18 +180,17 @@ def get_my_item(sender,room):
     #현재 보유중인 아이템
     user_items = (
         db.session.query(enhancement_game)
-        .filter(enhancement_game.user==sender)
+        .filter(and_(enhancement_game.user==sender,enhancement_game.room==room))
         .order_by(desc('update_date'))
         .all()
     )
     res = f"[현재 {sender}님이 보유중인 아이템]\n\n"
     for index, item in enumerate(user_items):
-        res = res + f"{str(index+1)}. [{item.item_name}] LV.{item.item_level}\n"
+        res = res + f"{str(index+1)}. [{item.item_name}] Lv.{item.item_level}\n"
     return res.strip()
 
 def get_manual():
-    res ="""[강화 게임(베타)]
-*해당 게임은 베타버전이며 정식오픈하면 이전 데이터는 전부 삭제됩니다.
+    res ="""[강화 게임]
     
 !강화 (아이템 명)
  - 자신이 원하는 이름의 아이템을 강화할 수 있다. 
@@ -191,6 +198,7 @@ def get_manual():
  - 확률은 레벨에 비례하지 절대로 수치가 아니며, 확률이 음수(-)로 표기될 수 있다. 
  - 강화는 1분마다 한 번 강화할 수 있다
  - 아이템은 인당 최고 5개까지 보유 가능하다
+ - 매주 월요일마다 최고 레벨의 아이템을 기네스에 기록하고 전체 강화 데이터를 초기화한다.
  
 !강화 보유 (아이템명)
  - 내가 강화 중인 아이템 목록을 보여준다.
@@ -200,6 +208,12 @@ def get_manual():
  
 !강화 순위
  - 채팅방의 현재 강화 순위 top 10을 보여준다.
+ 
+!강화 내기록
+ - 강화 성공/실패/파괴 횟수 등 출력
+ 
+!강화 기네스
+ - 강화 성공/실패/파괴 횟수 등 출력
 """
     return res
 
@@ -222,17 +236,21 @@ def get_room_rank(room):
         .limit(10)
         .all()
     )
-    formatted_now = current_date.strftime("%Y년 %m월")
-    week_number = get_week_number()
-    
-    res = f"""[{formatted_now} {week_number}주차 강화 순위]
+    if existed_item:
+        
+        formatted_now = current_date.strftime("%Y년 %m월")
+        week_number = get_week_number()
+        
+        res = f"""[{formatted_now} {week_number}주차 강화 순위]
 방이름 : {room}
     
 > [아이템] (레벨) - 유저
 """
-    
-    for index, item in enumerate(existed_item):
-        res = res + f"{str(index+1)}. [{item.item_name}](Lv.{item.item_level}) - {item.user}\n"
+        
+        for index, item in enumerate(existed_item):
+            res = res + f"{str(index+1)}. [{item.item_name}](Lv.{item.item_level}) - {item.user}\n"
+    else:
+        res = "순위 내역이 없습니다."
     return res.strip()
 
 def get_week_number():
@@ -291,3 +309,48 @@ def getRooms():
         .all()
     )
     return rooms
+
+def get_my_record(sender, room):
+    
+    destroy_count = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.current_level == 0).count()
+
+    success_count = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level > 0).count()
+
+    fail_count = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level < 0).count()
+
+    total_level_up = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level > 0).with_entities(func.sum(enhancement_history.change_level)).scalar()
+
+    total_level_down = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level < 0).with_entities(func.sum(enhancement_history.change_level)).scalar()
+    
+    res = f"""[금주 {sender}님의 기록입니다.]
+
+성공횟수 : {success_count}
+실패횟수 : {fail_count}
+파괴횟수 : {destroy_count}
+
+총 레벨 업 : {total_level_up}
+총 레벨 다운 : {total_level_down}
+"""
+    
+    return res
+
+def call_procedure():
+    db.session.execute(text("call save_guiness()"))
+    
+def get_guiness(room):
+    
+    result = (
+        db.session.query(enhancement_guiness)
+        .order_by(desc('item_level'))
+        .limit(10)
+        .all()
+    )
+    
+    res = f"""✨🌟💐[명예의 전당]💐🌟✨
+방 이름 : {room}
+
+"""
+    for index,item in enumerate(result):
+        res = res + f"{str(index+1)}. [{item.item_name}](Lv.{item.item_level}) - {item.user}\n"
+        
+    return res.strip()

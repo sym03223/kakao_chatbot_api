@@ -392,8 +392,11 @@ def getRestaurantByArea(area):
     res = f"""['{area.replace("+"," ")} 맛집' 카카오맵 검색 결과]\n\n"""
     
     count = len(rest_names) if len(rest_names) < 10 else 10
-    for i in range(0,count):
-        res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text})\n주소: {rest_address[i].p.text} \n링크: {rest_link[i].get('href')}\n\n"
+    if count==0:
+        res = "검색 결과가 없습니다."
+    else:
+        for i in range(0,count):
+            res = res + f"{str(i+1)}. {rest_names[i].text}({rest_sub[i].text})\n주소: {rest_address[i].p.text} \n링크: {rest_link[i].get('href')}\n\n"
     return res
     
 def getVs(msgSplit,sender):

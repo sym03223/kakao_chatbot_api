@@ -4,7 +4,7 @@ import app.config.config as conf
 from flask_migrate import Migrate
 
 
-app = Flask(__name__) 
+app = Flask(__name__)
 # basedir = os.path.abspath(os.path.dirname(__file__))
 
 #DB 설정 임포트
@@ -21,5 +21,4 @@ with app.app_context():
     db.create_all()
 
 migrate = Migrate(app,db)
-    
 from app.main import main
