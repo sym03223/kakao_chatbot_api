@@ -345,12 +345,14 @@ def get_guiness(room):
         .limit(10)
         .all()
     )
-    
-    res = f"""✨🌟💐[명예의 전당]💐🌟✨
+    if result:
+        
+        res = f"""✨🌟💐[명예의 전당]💐🌟✨
 방 이름 : {room}
 
 """
-    for index,item in enumerate(result):
-        res = res + f"{str(index+1)}. [{item.item_name}](Lv.{item.item_level}) - {item.user}\n"
-        
+        for index,item in enumerate(result):
+            res = res + f"{str(index+1)}. [{item.item_name}](Lv.{item.item_level}) - {item.user}\n"
+    else:
+        res = "아직 명예의 전당에 오른 아이템이 없습니다."
     return res.strip()
