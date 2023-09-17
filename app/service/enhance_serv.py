@@ -312,15 +312,54 @@ def getRooms():
 
 def get_my_record(sender, room):
     
-    destroy_count = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.current_level == 0).count()
+    # 현재 날짜 구하기
+    current_date = datetime.now()
 
-    success_count = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level > 0).count()
+    # 이번 주의 시작일 (월요일)
+    start_of_week = current_date - timedelta(days=current_date.weekday())
 
-    fail_count = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level < 0).count()
+    # 이번 주의 끝일 (일요일)
+    end_of_week = start_of_week + timedelta(days=6)
 
-    total_level_up = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level > 0).with_entities(func.sum(enhancement_history.change_level)).scalar()
+    destroy_count = db.session.query(enhancement_history).filter(
+        enhancement_history.room == room,
+        enhancement_history.user == sender,
+        enhancement_history.current_level == 0,
+        enhancement_history.create_date >= start_of_week,
+        enhancement_history.create_date <= end_of_week
+    ).count()
 
-    total_level_down = db.session.query(enhancement_history).filter(enhancement_history.room == room, enhancement_history.user == sender, enhancement_history.change_level < 0).with_entities(func.sum(enhancement_history.change_level)).scalar()
+    success_count = db.session.query(enhancement_history).filter(
+        enhancement_history.room == room,
+        enhancement_history.user == sender,
+        enhancement_history.change_level > 0,
+        enhancement_history.create_date >= start_of_week,
+        enhancement_history.create_date <= end_of_week
+    ).count()
+
+    fail_count = db.session.query(enhancement_history).filter(
+        enhancement_history.room == room,
+        enhancement_history.user == sender,
+        enhancement_history.change_level < 0,
+        enhancement_history.create_date >= start_of_week,
+        enhancement_history.create_date <= end_of_week
+    ).count()
+
+    total_level_up = db.session.query(enhancement_history).filter(
+        enhancement_history.room == room,
+        enhancement_history.user == sender,
+        enhancement_history.change_level > 0,
+        enhancement_history.create_date >= start_of_week,
+        enhancement_history.create_date <= end_of_week
+    ).with_entities(func.sum(enhancement_history.change_level)).scalar()
+
+    total_level_down = db.session.query(enhancement_history).filter(
+        enhancement_history.room == room,
+        enhancement_history.user == sender,
+        enhancement_history.change_level < 0,
+        enhancement_history.create_date >= start_of_week,
+        enhancement_history.create_date <= end_of_week
+    ).with_entities(func.sum(enhancement_history.change_level)).scalar()
     
     res = f"""[금주 {sender}님의 기록입니다.]
 
