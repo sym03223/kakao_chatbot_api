@@ -358,9 +358,7 @@ def enhancement():
             res = enhance_serv.get_my_record(sender,room)
         else:
             item_name = msg.replace(msgSplit[0],"").strip()
-            print("item_name : ",item_name)
             res = enhance_serv.create_item(sender,room,item_name)
-            print("res111 : "+res)
     except Exception as e:
         print(e)
         traceback.print_exc()
@@ -371,5 +369,4 @@ def enhancement():
         #로그 생성
         app.logger.info(f'sender = {sender}, msg = {msg}, room = {room}, isGroupChat = {isGroupChat}')
         app.logger.info(f'response = {res}')    
-    print("res222 : "+res)
     return(res)

@@ -15,10 +15,18 @@ def create_item(sender,room,item_name):
     #현재 보유중인 아이템
     user_items = (
         db.session.query(enhancement_game)
-        .filter(enhancement_game.user==sender)
+        .filter(and_(enhancement_game.user==sender, enhancement_game.room==room))
         .order_by(desc('update_date'))
         .all()
     )
+    
+    #가장 최근 히스토리
+    # user_history = (
+    #     db.session.query(enhancement_history)
+    #     .filter(and_(enhancement_game.user==sender, enhancement_game.room==room))
+    #     .order_by(desc('update_date'))
+    #     .first()
+    # )
 
     #기존에 있는 아이템인지 확인
     existed_item= (
@@ -82,7 +90,7 @@ def create_item(sender,room,item_name):
         plus_level = result.get('plus_level')
         #결과
         if after_level==0:
-            res = f"""--------\U0001F4A3DESTROY\U0001F4A3--------
+            res = f"""--------💥DESTROY💥--------
 {round(result.get('destroy_chances')*100,2)}%의 확률로 아이템이 파괴~\U0001F631
 [{item.item_name}]이 가루가 되었습니다~!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.0 (-{item.item_level})
@@ -101,7 +109,14 @@ def create_item(sender,room,item_name):
             item.item_level = after_level
             db.session.add(item)
         elif item.item_level < after_level:
-            res = f"""--------\U0001F389SUCCESS\U0001F389--------
+            if plus_level >= 10:
+                res = f"""--------🌟WONDERFUL🌟--------
+{round(result.get('success_chances')*100,2)}%의 확률로 강화에 대성공하였습니다!!
+[{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
+--------🌟WONDERFUL🌟--------
+"""     
+            else:
+                res = f"""--------\U0001F389SUCCESS\U0001F389--------
 {round(result.get('success_chances')*100,2)}%의 확률로 강화에 성공하였습니다!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------\U0001F389SUCCESS\U0001F389--------
@@ -149,6 +164,10 @@ def calc_level(current_level):
     
     rand = random.random()
     plus_level = random.randint(1,9)
+    print("rand : ",rand)
+    print("success_chances : ",success_chances)
+    print("destroy_chances : ",destroy_chances)
+    print("plus_level : ",plus_level)
     #대성공
     if rand <= 0.001:
         plus_level = random.randint(10,50)
@@ -195,6 +214,7 @@ def get_manual():
 !강화 (아이템 명)
  - 자신이 원하는 이름의 아이템을 강화할 수 있다. 
  - 강화 성공시 1~9레벨이 무작위로 올라가고, 실패시 레벨이 내려가거나 파괴될 수 있다. 
+ - 강화 대성공시 10~50 레벨이 무작위로 올라간다.
  - 확률은 레벨에 비례하지 절대로 수치가 아니며, 확률이 음수(-)로 표기될 수 있다. 
  - 강화는 1분마다 한 번 강화할 수 있다
  - 아이템은 인당 최고 5개까지 보유 가능하다
@@ -213,7 +233,7 @@ def get_manual():
  - 강화 성공/실패/파괴 횟수 등 출력
  
 !강화 기네스
- - 강화 성공/실패/파괴 횟수 등 출력
+ - 주차별 역대 강화 기록 출력
 """
     return res
 
@@ -222,11 +242,12 @@ def get_room_rank(room):
     current_date = datetime.now()
 
     # 이번 주의 시작일 구하기 (월요일 기준)
-    start_of_week = current_date - timedelta(days=current_date.weekday())
+    start_of_week = current_date - timedelta(days=current_date.weekday(), hours=current_date.hour, minutes=current_date.minute, seconds=current_date.second)
 
     # 이번 주의 끝일 구하기 (일요일 기준)
-    end_of_week = start_of_week + timedelta(days=6)
-
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    # print("이번 주의 시작일:", start_of_week.strftime("%Y-%m-%d %H:%M:%S"))
+    # print("이번 주의 끝일:", end_of_week.strftime("%Y-%m-%d %H:%M:%S"))
     existed_item= (
         db.session.query(enhancement_game)
         .filter(and_(enhancement_game.room == room,
@@ -269,57 +290,16 @@ def get_week_number():
     week_number = ((current_date - first_day_of_week).days // 7) + 1
     return week_number
 
-
-#### 스케줄러용 함수
-def save_guiness():
-     # 현재 날짜 구하기
-    current_date = datetime.now()
-
-    # 이번 주의 시작일 구하기 (월요일 기준)
-    start_of_week = current_date - timedelta(days=current_date.weekday())
-
-    # 이번 주의 끝일 구하기 (일요일 기준)
-    end_of_week = start_of_week + timedelta(days=6)
-
-    rooms = getRooms()
-    
-    for i in range(0,len(rooms)):
-        best_item_this_week = (
-            db.session.query(enhancement_game)
-            .filter(and_(enhancement_game.room == rooms[i],
-                enhancement_game.create_date >= start_of_week,
-                enhancement_game.create_date <= end_of_week))
-            .order_by(desc('item_level'))
-            .first()
-        )
-        
-        if best_item_this_week:
-            item = best_item_this_week[0]
-            print("item : "+item)
-            new_guiness = enhancement_guiness(user=item.user,item_name=item.item_name,
-                                            item_level=item.item_name,room=rooms[i])
-            db.session.add(new_guiness)
-            db.session.commit()
-            
-def getRooms():
-    
-    rooms = (
-        db.session.query(enhancement_game.room)
-        .distinct()
-        .all()
-    )
-    return rooms
-
 def get_my_record(sender, room):
     
     # 현재 날짜 구하기
     current_date = datetime.now()
 
-    # 이번 주의 시작일 (월요일)
-    start_of_week = current_date - timedelta(days=current_date.weekday())
+    # 이번 주의 시작일 구하기 (월요일 기준)
+    start_of_week = current_date - timedelta(days=current_date.weekday(), hours=current_date.hour, minutes=current_date.minute, seconds=current_date.second)
 
-    # 이번 주의 끝일 (일요일)
-    end_of_week = start_of_week + timedelta(days=6)
+    # 이번 주의 끝일 구하기 (일요일 기준)
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
     destroy_count = db.session.query(enhancement_history).filter(
         enhancement_history.room == room,
@@ -380,6 +360,7 @@ def get_guiness(room):
     
     result = (
         db.session.query(enhancement_guiness)
+        .filter(enhancement_guiness.room==room)
         .order_by(desc('item_level'))
         .limit(10)
         .all()
