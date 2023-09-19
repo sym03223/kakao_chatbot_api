@@ -19,14 +19,6 @@ def create_item(sender,room,item_name):
         .order_by(desc('update_date'))
         .all()
     )
-    
-    #가장 최근 히스토리
-    # user_history = (
-    #     db.session.query(enhancement_history)
-    #     .filter(and_(enhancement_game.user==sender, enhancement_game.room==room))
-    #     .order_by(desc('update_date'))
-    #     .first()
-    # )
 
     #기존에 있는 아이템인지 확인
     existed_item= (
@@ -109,18 +101,27 @@ def create_item(sender,room,item_name):
             item.item_level = after_level
             db.session.add(item)
         elif item.item_level < after_level:
+            #강화 대성공
             if plus_level >= 10:
                 res = f"""--------🌟WONDERFUL🌟--------
 {round(result.get('success_chances')*100,2)}%의 확률로 강화에 대성공하였습니다!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------🌟WONDERFUL🌟--------
-"""     
+"""         #강화 일반성공
             else:
                 res = f"""--------\U0001F389SUCCESS\U0001F389--------
 {round(result.get('success_chances')*100,2)}%의 확률로 강화에 성공하였습니다!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------\U0001F389SUCCESS\U0001F389--------
 """     
+        #파괴방지
+        elif plus_level==0:
+            res = f"""--------🛡️DEFENSE🛡️--------
+{round(result.get('talisman')*100,2)}%의 확률로 파괴를 막았습니다!!
+[{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
+--------🛡️DEFENSE🛡️--------
+"""    
+        
             #아이템 레벨 업데이트
             item.item_level = after_level
             db.session.add(item)
@@ -161,7 +162,7 @@ def calc_level(current_level):
     success_chances = max(0.05, 1 - (0.005 * abs(current_level)))
     destroy_chances = 0.001*abs(current_level)
     result = {}
-    
+    talisman=0
     rand = random.random()
     plus_level = random.randint(1,9)
     print("rand : ",rand)
@@ -169,7 +170,7 @@ def calc_level(current_level):
     print("destroy_chances : ",destroy_chances)
     print("plus_level : ",plus_level)
     #대성공
-    if rand <= 0.001:
+    if rand <= 0.005:
         plus_level = random.randint(10,50)
         current_level += plus_level
         success_chances = 0.001
@@ -180,9 +181,15 @@ def calc_level(current_level):
         #실패
         else:
             #파괴
-            if rand < success_chances + destroy_chances:
-                plus_level=-current_level
-                current_level = 0  
+            if rand < success_chances + destroy_chances and current_level >= 40:
+                talisman = random.random()
+                #파괴방지부적작동
+                if talisman <= 0.2:
+                    current_level=current_level
+                    plus_level=0
+                else:    
+                    plus_level=-current_level
+                    current_level = 0  
             #레벨다운
             else:
                 current_level -= plus_level             
@@ -192,6 +199,7 @@ def calc_level(current_level):
     result['destroy_chances'] = destroy_chances
     result['plus_level'] = plus_level
     result['after_level'] = current_level
+    result['talisman'] = talisman
     
     return result
     
@@ -214,6 +222,7 @@ def get_manual():
 !강화 (아이템 명)
  - 자신이 원하는 이름의 아이템을 강화할 수 있다. 
  - 강화 성공시 1~9레벨이 무작위로 올라가고, 실패시 레벨이 내려가거나 파괴될 수 있다. 
+ - 파괴 시 20% 확률로 파괴방지부적이 작동된다.
  - 강화 대성공시 10~50 레벨이 무작위로 올라간다.
  - 확률은 레벨에 비례하지 절대로 수치가 아니며, 확률이 음수(-)로 표기될 수 있다. 
  - 강화는 1분마다 한 번 강화할 수 있다
