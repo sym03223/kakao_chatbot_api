@@ -90,8 +90,8 @@ def create_item(sender,room,item_name):
 """         
             #아이템삭제
             db.session.delete(item)
+        #강화실패
         elif item.item_level > after_level:
-            
             res = f"""--------\U0001F62DFAILURE\U0001F62D--------
 {round((1-result.get('success_chances')-result.get('destroy_chances'))*100,2)}%의 확률로 강화에 실패하였습니다...\U0001F629
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} ({plus_level})
@@ -103,10 +103,10 @@ def create_item(sender,room,item_name):
         elif item.item_level < after_level:
             #강화 대성공
             if plus_level >= 10:
-                res = f"""--------🌟WONDERFUL🌟--------
+                res = f"""-------🌟WONDERFUL🌟-------
 {round(result.get('success_chances')*100,2)}%의 확률로 강화에 대성공하였습니다!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
---------🌟WONDERFUL🌟--------
+-------🌟WONDERFUL🌟-------
 """         #강화 일반성공
             else:
                 res = f"""--------\U0001F389SUCCESS\U0001F389--------
@@ -114,6 +114,9 @@ def create_item(sender,room,item_name):
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------\U0001F389SUCCESS\U0001F389--------
 """     
+            #아이템 레벨 업데이트
+            item.item_level = after_level
+            db.session.add(item)
         #파괴방지
         elif plus_level==0:
             res = f"""--------🛡️DEFENSE🛡️--------
@@ -121,10 +124,11 @@ def create_item(sender,room,item_name):
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------🛡️DEFENSE🛡️--------
 """    
-        
             #아이템 레벨 업데이트
             item.item_level = after_level
             db.session.add(item)
+        
+        
         
         #히스토리 저장
         new_history = enhancement_history(user=sender, 
@@ -170,7 +174,7 @@ def calc_level(current_level):
     print("destroy_chances : ",destroy_chances)
     print("plus_level : ",plus_level)
     #대성공
-    if rand <= 0.005:
+    if rand <= 0.001:
         plus_level = random.randint(10,50)
         current_level += plus_level
         success_chances = 0.001
