@@ -120,7 +120,7 @@ def create_item(sender,room,item_name):
         #파괴방지
         elif plus_level==0:
             res = f"""--------🛡️DEFENSE🛡️--------
-20%의 확률로 파괴를 막았습니다!!
+{round(result.get('talisman')*100,2)}%의 확률로 파괴를 막았습니다!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------🛡️DEFENSE🛡️--------
 """    
@@ -163,7 +163,7 @@ def delete_my_item(sender,room,item_name):
     return res
 
 def calc_level(current_level):
-    success_chances = max(0.05, 1 - (0.005 * abs(current_level)))
+    success_chances = max(0.3, 1 - (0.00478 * abs(current_level)))
     destroy_chances = 0.001*abs(current_level)
     result = {}
     talisman=0
@@ -174,10 +174,10 @@ def calc_level(current_level):
     print("destroy_chances : ",destroy_chances)
     print("plus_level : ",plus_level)
     #대성공
-    if rand <= 0.003:
+    if rand <= 0.005:
         plus_level = random.randint(10,50)
         current_level += plus_level
-        success_chances = 0.003
+        success_chances = 0.005
     else:
         #성공
         if rand < success_chances:
@@ -187,9 +187,11 @@ def calc_level(current_level):
             #파괴
             if rand < success_chances + destroy_chances and current_level >= 40:
                 talisman = random.random()
+                print(talisman)
                 #파괴방지부적작동
-                if talisman <= 0.2:
+                if talisman <= 0.3:
                     current_level=current_level
+                    talisman=(1-success_chances + destroy_chances)*0.3
                     plus_level=0
                 else:    
                     plus_level=-current_level
@@ -389,3 +391,43 @@ def get_guiness(room):
     else:
         res = "아직 명예의 전당에 오른 아이템이 없습니다."
     return res.strip()
+
+#### 스케줄러용 함수
+def save_guiness():
+     # 현재 날짜 구하기
+    current_date = datetime.now()
+
+    # 이번 주의 시작일 구하기 (월요일 기준)
+    start_of_week = current_date - timedelta(days=current_date.weekday(), hours=current_date.hour, minutes=current_date.minute, seconds=current_date.second)
+
+    # 이번 주의 끝일 구하기 (일요일 기준)
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+    rooms = getRooms()
+    for room in rooms:
+        best_item_this_week = (
+            db.session.query(enhancement_game)
+            .filter(and_(enhancement_game.room == room[0],
+                enhancement_game.create_date >= start_of_week,
+                enhancement_game.create_date <= end_of_week))
+            .order_by(desc('item_level'), desc('update_date'))
+            .first()
+        )
+        if best_item_this_week:
+            item = best_item_this_week
+            new_guiness = enhancement_guiness(user=item.user,item_name=item.item_name,
+                                            item_level=item.item_level,room=item.room)
+            db.session.add(new_guiness)
+            db.session.commit()
+    #game 테이블 초기화
+    db.session.query(enhancement_game).delete()
+    db.session.commit()
+    
+def getRooms():
+
+    rooms = (
+        db.session.query(enhancement_game.room)
+        .distinct()
+        .all()
+    )
+    return rooms
