@@ -120,7 +120,7 @@ def create_item(sender,room,item_name):
         #파괴방지
         elif plus_level==0:
             res = f"""--------🛡️DEFENSE🛡️--------
-{round(result.get('talisman')*100,2)}%의 확률로 파괴를 막았습니다!!
+20%의 확률로 파괴를 막았습니다!!
 [{item.item_name}] Lv.{item.item_level} \U000027A1 Lv.{after_level} (+{plus_level})
 --------🛡️DEFENSE🛡️--------
 """    
@@ -174,10 +174,10 @@ def calc_level(current_level):
     print("destroy_chances : ",destroy_chances)
     print("plus_level : ",plus_level)
     #대성공
-    if rand <= 0.001:
+    if rand <= 0.003:
         plus_level = random.randint(10,50)
         current_level += plus_level
-        success_chances = 0.001
+        success_chances = 0.003
     else:
         #성공
         if rand < success_chances:
