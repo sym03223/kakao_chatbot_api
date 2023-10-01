@@ -356,6 +356,8 @@ def enhancement():
             res = enhance_serv.get_my_item(sender,room)
         elif msgSplit[1] == "내기록":
             res = enhance_serv.get_my_record(sender,room)
+        elif msgSplit[1] == "무덤":
+            res = enhance_serv.get_my_grave(sender,room)
         else:
             item_name = msg.replace(msgSplit[0],"").strip()
             res = enhance_serv.create_item(sender,room,item_name)

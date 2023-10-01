@@ -218,9 +218,12 @@ def get_my_item(sender,room):
         .order_by(desc('item_level'),desc('update_date'))
         .all()
     )
-    res = f"[현재 {sender}님이 보유중인 아이템]\n\n"
-    for index, item in enumerate(user_items):
-        res = res + f"{str(index+1)}. [{item.item_name}] Lv.{item.item_level}\n"
+    if user_items:
+        res = f"[현재 {sender}님이 보유중인 아이템]\n\n"
+        for index, item in enumerate(user_items):
+            res = res + f"{str(index+1)}. [{item.item_name}] Lv.{item.item_level}\n"
+    else:
+        res = "보유한 아이템이 없습니다."
     return res.strip()
 
 def get_manual():
@@ -359,6 +362,7 @@ def get_my_record(sender, room):
     
     res = f"""[금주 {sender}님의 기록입니다.]
 
+총 강화 횟수 : {success_count+fail_count+destroy_count} 
 성공횟수 : {success_count}
 실패횟수 : {fail_count}
 파괴횟수 : {destroy_count}
@@ -432,3 +436,35 @@ def getRooms():
         .all()
     )
     return rooms
+
+def get_my_grave(room,sender):
+     # 현재 날짜 구하기
+    current_date = datetime.now()
+
+    # 이번 주의 시작일 구하기 (월요일 기준)
+    start_of_week = current_date - timedelta(days=current_date.weekday(), hours=current_date.hour, minutes=current_date.minute, seconds=current_date.second)
+
+    # 이번 주의 끝일 구하기 (일요일 기준)
+    end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    
+    grave_items = (
+            db.session.query(enhancement_history)
+            .filter(and_(enhancement_history.room == room,
+                enhancement_history.user == sender,
+                enhancement_history.current_level == 0))
+            .order_by(desc('update_date'))
+            .all()
+    )
+    
+    if grave_items:
+    
+        res = f"""[{sender}님의 파괴된 아이템 목록]
+
+> [아이템] - 유저
+"""
+        
+        for index, item in enumerate(grave_items):
+            res = res + f"{str(index+1)}. {item.item_name} - {item.user}\n"
+    else:
+        res = "데이터가 존재하지 않습니다."
+    return res
