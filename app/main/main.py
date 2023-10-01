@@ -333,19 +333,11 @@ def enhancement():
         elif msgSplit[1] == "기네스":
             if len(msgSplit)<3:
                 res = enhance_serv.get_guiness(room)
-            elif msgSplit[2]=="평균":
-                res = "강화 평균"
-            elif msgSplit[2]=="서버":
-                res = "서버 강화 평균"
         elif msgSplit[1] == "순위":
             if len(msgSplit)<3:
                 res = enhance_serv.get_room_rank(room)
             elif msgSplit[2]=="서버":
                 res = "강화 순위 서버"
-            elif msgSplit[2]=="전체":
-                res = "강화 순위 전체"
-            elif msgSplit[2]=="현재":
-                res = "강화 순위 현재"
         elif msgSplit[1] == "삭제":
             if len(msgSplit)<3:
                 res = "삭제할 아이템명을 입력해주세요."

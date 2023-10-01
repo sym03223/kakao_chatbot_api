@@ -451,7 +451,9 @@ def get_my_grave(room,sender):
             db.session.query(enhancement_history)
             .filter(and_(enhancement_history.room == room,
                 enhancement_history.user == sender,
-                enhancement_history.current_level == 0))
+                enhancement_history.current_level == 0,
+                enhancement_history.create_date >= start_of_week,
+                enhancement_history.create_date <= end_of_week))
             .order_by(desc('update_date'))
             .all()
     )
