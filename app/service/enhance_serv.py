@@ -126,6 +126,7 @@ def create_item(sender,room,item_name):
 """    
             #아이템 레벨 업데이트
             item.item_level = after_level
+            item.update_date = datetime.now()
             db.session.add(item)
         
         
@@ -163,8 +164,8 @@ def delete_my_item(sender,room,item_name):
     return res
 
 def calc_level(current_level):
-    success_chances = max(0.3, 1 - (0.00478 * abs(current_level)))
-    destroy_chances = 0.001*abs(current_level)
+    success_chances = max(0.2, 1 - (0.00478 * abs(current_level)))
+    destroy_chances = 0.0005*abs(current_level)
     result = {}
     talisman=0
     rand = random.random()
@@ -174,10 +175,10 @@ def calc_level(current_level):
     print("destroy_chances : ",destroy_chances)
     print("plus_level : ",plus_level)
     #대성공
-    if rand <= 0.005:
+    if rand <= 0.01:
         plus_level = random.randint(10,50)
         current_level += plus_level
-        success_chances = 0.005
+        success_chances = 0.01
     else:
         #성공
         if rand < success_chances:
@@ -191,7 +192,7 @@ def calc_level(current_level):
                 #파괴방지부적작동
                 if talisman <= 0.3:
                     current_level=current_level
-                    talisman=(1-success_chances + destroy_chances)*0.3
+                    talisman=destroy_chances*0.3
                     plus_level=0
                 else:    
                     plus_level=-current_level
@@ -214,7 +215,7 @@ def get_my_item(sender,room):
     user_items = (
         db.session.query(enhancement_game)
         .filter(and_(enhancement_game.user==sender,enhancement_game.room==room))
-        .order_by(desc('update_date'))
+        .order_by(desc('item_level'),desc('update_date'))
         .all()
     )
     res = f"[현재 {sender}님이 보유중인 아이템]\n\n"

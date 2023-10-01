@@ -544,10 +544,12 @@ def getStockData(stock_name,sender):
 
 #종목명 -> 종목코드
 def get_stock_code(stock_name):
-    now = datetime.now() - timedelta(days=1)
+    now = datetime.now()
+    three_days_ago = datetime.now() - timedelta(days=3)
     formatted_now = now.strftime("%Y%m%d")
+    formatted_three_days_ago = three_days_ago.strftime("%Y%m%d")
     
-    df = stock.get_market_price_change(formatted_now, formatted_now ,market="ALL")
+    df = stock.get_market_price_change(formatted_three_days_ago, formatted_now ,market="ALL")
     row = df[df['종목명'] == stock_name]
     if len(row)==0:
         return "none"    
