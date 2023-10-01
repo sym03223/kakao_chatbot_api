@@ -454,7 +454,7 @@ def get_my_grave(room,sender):
                 enhancement_history.current_level == 0,
                 enhancement_history.create_date >= start_of_week,
                 enhancement_history.create_date <= end_of_week))
-            .order_by(desc('update_date'))
+            .order_by(desc('before_level'),desc('update_date'))
             .all()
     )
     
@@ -462,11 +462,11 @@ def get_my_grave(room,sender):
     
         res = f"""[{sender}님의 파괴된 아이템 목록]
 
-> [아이템] - 유저
+> [아이템] (최종레벨) - 유저
 """
         
         for index, item in enumerate(grave_items):
-            res = res + f"{str(index+1)}. {item.item_name} - {item.user}\n"
+            res = res + f"{str(index+1)}. {item.item_name} (Lv.{item.before_level}) - {item.user}\n"
     else:
         res = "데이터가 존재하지 않습니다."
     return res
