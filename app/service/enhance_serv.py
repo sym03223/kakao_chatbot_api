@@ -232,12 +232,12 @@ def get_manual():
 !강화 (아이템 명)
  - 자신이 원하는 이름의 아이템을 강화할 수 있다. 
  - 강화 성공시 1~9레벨이 무작위로 올라가고, 실패시 레벨이 내려가거나 파괴될 수 있다. 
- - 파괴 시 20% 확률로 파괴방지부적이 작동된다.
- - 강화 대성공시 10~50 레벨이 무작위로 올라간다.
+ - 파괴 시 30% 확률로 파괴방지부적이 작동된다.
+ - 1%확률로 강화 대성공시 10~50 레벨이 무작위로 올라간다.
  - 확률은 레벨에 비례하지 절대로 수치가 아니며, 확률이 음수(-)로 표기될 수 있다. 
  - 강화는 1분마다 한 번 강화할 수 있다
  - 아이템은 인당 최고 5개까지 보유 가능하다
- - 매주 월요일마다 최고 레벨의 아이템을 기네스에 기록하고 전체 강화 데이터를 초기화한다.
+ - 매주 일요일 자정 마다 최고 레벨의 아이템을 기네스에 기록하고 전체 강화 데이터를 초기화한다.
  
 !강화 보유 (아이템명)
  - 내가 강화 중인 아이템 목록을 보여준다.
@@ -253,6 +253,9 @@ def get_manual():
  
 !강화 기네스
  - 주차별 역대 강화 기록 출력
+ 
+!강화 무덤
+- 해당 주차동안 파괴된 아이템 목록
 """
     return res
 
@@ -437,7 +440,7 @@ def getRooms():
     )
     return rooms
 
-def get_my_grave(room,sender):
+def get_my_grave(sender,room):
      # 현재 날짜 구하기
     current_date = datetime.now()
 
@@ -446,7 +449,8 @@ def get_my_grave(room,sender):
 
     # 이번 주의 끝일 구하기 (일요일 기준)
     end_of_week = start_of_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
-    
+    print(start_of_week)
+    print(end_of_week)
     grave_items = (
             db.session.query(enhancement_history)
             .filter(and_(enhancement_history.room == room,
@@ -457,7 +461,7 @@ def get_my_grave(room,sender):
             .order_by(desc('before_level'),desc('update_date'))
             .all()
     )
-    
+    print(grave_items)
     if grave_items:
     
         res = f"""[{sender}님의 파괴된 아이템 목록]

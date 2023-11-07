@@ -16,7 +16,7 @@ options.add_argument("window-size=1920x1080") # 화면크기(전체화면)
 options.add_argument("disable-gpu") 
 options.add_argument("disable-infobars")
 options.add_argument("--disable-extensions")
-driver = webdriver.Chrome("C:\chromedriver116-win64\chromedriver-win64\chromedriver.exe", options=options)
+driver = webdriver.Chrome("C:\chromedriver-win64\chromedriver-win64\chromedriver.exe", options=options)
 
 # 속도 향상을 위한 옵션 해제
 
@@ -628,6 +628,7 @@ def getMelonChart():
 def getMovieList():
     url = "https://www.megabox.co.kr/movie"
     driver.get(url) 
+    time.sleep(0.5)
     html_source = driver.page_source
     soup = BeautifulSoup(html_source, 'html.parser')
     now = datetime.now()
